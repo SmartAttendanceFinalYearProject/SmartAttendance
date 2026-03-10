@@ -26,7 +26,7 @@ export default function AttendanceList({ attendance }: AttendanceListProps) {
           ) : (
             attendance.map((entry, index) => (
               <TableRow key={index}>
-                <TableCell>Abrham</TableCell>
+                <TableCell>Hizikyas</TableCell>
                 <TableCell>{entry.split(" at ")[1]}</TableCell>
                 <TableCell>Present</TableCell>
               </TableRow>

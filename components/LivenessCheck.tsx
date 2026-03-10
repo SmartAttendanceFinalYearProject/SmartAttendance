@@ -33,6 +33,34 @@ export const LivenessCheck: React.FC<LivenessCheckProps> = ({ onComplete, onCanc
   const [shakePositions, setShakePositions] = useState<{ x: number; y: number }[]>([])
   const [countdown, setCountdown] = useState<number | null>(null)
 
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stepStartRef = useRef<number>(0)
+  const executingRef = useRef(false)
+  const stepStatusRef = useRef(stepStatus)
+  const activeStepIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    stepStatusRef.current = stepStatus
+  }, [stepStatus])
+
+  const clearTimers = useCallback(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = null
+    }
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current)
+      checkIntervalRef.current = null
+    }
+    if (advanceTimeoutRef.current) {
+      clearTimeout(advanceTimeoutRef.current)
+      advanceTimeoutRef.current = null
+    }
+    executingRef.current = false
+  }, [])
+
 
   // Define liveness check steps
   const steps: LivenessStep[] = [
@@ -130,8 +158,13 @@ const executeStep = useCallback(async () => {
     // Video not ready yet
     return
   }
-  
-  setStepStatus('in-progress')
+
+  if (executingRef.current) return
+  executingRef.current = true
+
+  if (stepStatusRef.current === 'pending') {
+    setStepStatus('in-progress')
+  }
   
   try {
     let result
@@ -142,11 +175,17 @@ const executeStep = useCallback(async () => {
       if (result.success) {
         setShakePositions([]) // Reset for next time
         setStepStatus('success')
-        setTimeout(() => {
+        clearTimers()
+        setProgress(100)
+        setCountdown(0)
+        const completedStepId = currentStep.id
+        advanceTimeoutRef.current = setTimeout(() => {
+          if (activeStepIdRef.current !== completedStepId) return
           if (currentStepIndex < steps.length - 1) {
             setCurrentStepIndex(prev => prev + 1)
             setStepStatus('pending')
             setProgress(0)
+            setCountdown(null)
           } else {
             // All steps completed
             onComplete(true)
@@ -160,11 +199,17 @@ const executeStep = useCallback(async () => {
       
       if (result) {
         setStepStatus('success')
-        setTimeout(() => {
+        clearTimers()
+        setProgress(100)
+        setCountdown(0)
+        const completedStepId = currentStep.id
+        advanceTimeoutRef.current = setTimeout(() => {
+          if (activeStepIdRef.current !== completedStepId) return
           if (currentStepIndex < steps.length - 1) {
             setCurrentStepIndex(prev => prev + 1)
             setStepStatus('pending')
             setProgress(0)
+            setCountdown(null)
           } else {
             // All steps completed
             onComplete(true)
@@ -175,56 +220,57 @@ const executeStep = useCallback(async () => {
   } catch (err) {
     console.error('Step execution error:', err)
     setStepStatus('failed')
+    clearTimers()
   }
-}, [currentStep, currentStepIndex, shakePositions, steps.length, onComplete])
+  finally {
+    executingRef.current = false
+  }
+}, [clearTimers, currentStep, currentStepIndex, shakePositions, steps.length, onComplete])
 
-// Timer and step execution loop
+// Timer and step execution loop (single runner; no stacked intervals)
 useEffect(() => {
-  // Add null check for currentStep
-  if (!modelsLoaded || loading || stepStatus === 'success' || !currentStep) return
-  
-  let timeoutId: NodeJS.Timeout
-  let intervalId: NodeJS.Timeout
-  let startTime = Date.now()
-  const stepTimeout = currentStep.timeout * 1000
-  
-  // Update progress bar
-  intervalId = setInterval(() => {
-    const elapsed = (Date.now() - startTime) / 1000
-    const remaining = Math.max(0, currentStep.timeout - elapsed)
+  if (!modelsLoaded || loading || !currentStep) return
+  if (stepStatus !== 'pending' && stepStatus !== 'in-progress') return
+
+  clearTimers()
+  activeStepIdRef.current = currentStep.id
+  stepStartRef.current = Date.now()
+  setProgress(0)
+  setCountdown(currentStep.timeout)
+
+  progressIntervalRef.current = setInterval(() => {
+    const elapsedSeconds = (Date.now() - stepStartRef.current) / 1000
+    const remaining = Math.max(0, currentStep.timeout - elapsedSeconds)
+
     setCountdown(Math.ceil(remaining))
-    setProgress((elapsed / currentStep.timeout) * 100)
-    
-    if (elapsed >= currentStep.timeout) {
+    setProgress(Math.min(100, (elapsedSeconds / currentStep.timeout) * 100))
+
+    if (elapsedSeconds >= currentStep.timeout && stepStatusRef.current !== 'success') {
       setStepStatus('failed')
+      clearTimers()
+      setCountdown(0)
+      setProgress(100)
     }
-  }, 100)
-  
-  // Execute step repeatedly
-  const executeRepeatedly = async () => {
-    const checkAndExecute = async () => {
-      if (stepStatus === 'pending' || stepStatus === 'in-progress') {
-        await executeStep()
-      }
+  }, 200)
+
+  // Run checks periodically, but never overlap async executions.
+  const tick = () => {
+    if (stepStatusRef.current === 'pending' || stepStatusRef.current === 'in-progress') {
+      void executeStep()
     }
-    
-    // Initial execution
-    await checkAndExecute()
-    
-    // Continue executing
-    timeoutId = setInterval(checkAndExecute, 500)
   }
-  
-  executeRepeatedly()
-  
+
+  tick()
+  checkIntervalRef.current = setInterval(tick, 500)
+
   return () => {
-    clearInterval(intervalId)
-    if (timeoutId) clearInterval(timeoutId)
+    clearTimers()
   }
-}, [currentStep, modelsLoaded, loading, stepStatus, executeStep])
+}, [clearTimers, currentStep, executeStep, loading, modelsLoaded, stepStatus])
 
   // Handle retry
   const handleRetry = () => {
+    clearTimers()
     setStepStatus('pending')
     setProgress(0)
     setCountdown(null)

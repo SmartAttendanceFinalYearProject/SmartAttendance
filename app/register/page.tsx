@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, Camera, Check, User, Shield } from "lucide-react"
+import { AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { LivenessCheck } from "@/components/LivenessCheck"
 
@@ -96,9 +96,11 @@ export default function FaceRegistrationPage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [livenessVerified, setLivenessVerified] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    userId: "",
+    fullName: "",        // Changed from name
+    studentID: "",       // Changed from student_id
+    department: "",      // New field
+    section: "",         // New field
+    email: "",           // New field
   })
   const [isRegistering, setIsRegistering] = useState(false)
   const [isRegistered, setIsRegistered] = useState(false)
@@ -121,10 +123,13 @@ export default function FaceRegistrationPage() {
     setLivenessVerified(success)
   }
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return email === "" || emailRegex.test(email) // Empty is allowed (optional field)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     
     if (!capturedImage) {
       setError("Please capture your face image before registering")
@@ -136,12 +141,12 @@ export default function FaceRegistrationPage() {
       return
     }
 
-    if (!formData.name || !formData.email || !formData.userId) {
-      setError("Please fill in all fields")
+    if (!formData.fullName || !formData.studentID) {
+      setError("Full Name and Student ID are required fields")
       return
     }
 
-    if (!emailRegex.test(formData.email)) {
+    if (formData.email && !validateEmail(formData.email)) {
       setError("Please enter a valid email address")
       return
     }
@@ -150,39 +155,71 @@ export default function FaceRegistrationPage() {
     setError(null)
 
     try {
-      let base64Image = ""
-      if (capturedImage) {
-        const match = capturedImage.match(/^data:image\/\w+;base64,(.+)$/)
-        base64Image = match ? match[1] : capturedImage
+      // Convert base64 image to blob/file
+      const base64Data = capturedImage.includes(',') 
+        ? capturedImage.split(',')[1] 
+        : capturedImage
+      
+      const byteCharacters = atob(base64Data)
+      const byteArrays = []
+      
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArrays.push(byteCharacters.charCodeAt(i))
       }
+      
+      const byteArray = new Uint8Array(byteArrays)
+      const blob = new Blob([byteArray], { type: 'image/jpeg' })
+      const file = new File([blob], 'face.jpg', { type: 'image/jpeg' })
 
-      const registrationData = {
-        student_id: formData.userId,
-        name: formData.name,
-        face_image: base64Image,
+      // Create FormData with exact field names matching backend
+      const formDataToSend = new FormData()
+      formDataToSend.append('fullName', formData.fullName)
+      formDataToSend.append('studentID', formData.studentID)
+      
+      // Only append optional fields if they have values
+      if (formData.department) {
+        formDataToSend.append('department', formData.department)
       }
+      
+      if (formData.section) {
+        formDataToSend.append('section', formData.section)
+      }
+      
+      if (formData.email) {
+        formDataToSend.append('email', formData.email)
+      }
+      
+      formDataToSend.append('image', file)
 
-      const response = await fetch("http://localhost:8000/students/", {
+      const response = await fetch("http://localhost:8000/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(registrationData),
+        body: formDataToSend,
         signal: AbortSignal.timeout(10000),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Registration failed with status ${response.status}`)
+        throw new Error(errorData.detail || `Registration failed with status ${response.status}`)
       }
 
       const result = await response.json()
       console.log("Registration successful:", result)
+      
+      // Show success message
       setIsRegistered(true)
-      setFormData({ name: "", email: "", userId: "" })
+      
+      // Reset form
+      setFormData({ 
+        fullName: "", 
+        studentID: "", 
+        department: "",
+        section: "",
+        email: ""
+      })
       setCapturedImage(null)
       setLivenessVerified(false)
       setActiveTab("capture")
+      
     } catch (error: any) {
       console.error("Error registering user:", error)
       setError(error.message || "Failed to register user. Please try again.")
@@ -215,10 +252,18 @@ export default function FaceRegistrationPage() {
                   />
                 </div>
               )}
-              <div className="text-center">
-                <p className="font-medium text-lg">{formData.name}</p>
-                <p className="text-muted-foreground">{formData.email}</p>
-                <p className="text-sm text-muted-foreground">User ID: {formData.userId}</p>
+              <div className="text-center space-y-2">
+                <p className="font-medium text-lg">{formData.fullName}</p>
+                <p className="text-sm text-muted-foreground">Student ID: {formData.studentID}</p>
+                {formData.department && (
+                  <p className="text-sm text-muted-foreground">Department: {formData.department}</p>
+                )}
+                {formData.section && (
+                  <p className="text-sm text-muted-foreground">Section: {formData.section}</p>
+                )}
+                {formData.email && (
+                  <p className="text-sm text-muted-foreground">Email: {formData.email}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -228,13 +273,19 @@ export default function FaceRegistrationPage() {
               onClick={() => {
                 setCapturedImage(null)
                 setLivenessVerified(false)
-                setFormData({ name: "", email: "", userId: "" })
+                setFormData({ 
+                  fullName: "", 
+                  studentID: "", 
+                  department: "", 
+                  section: "", 
+                  email: "" 
+                })
                 setIsRegistered(false)
                 setActiveTab("capture")
                 setError(null)
               }}
             >
-              Register Another User
+              Register Another Student
             </Button>
           </CardFooter>
         </Card>
@@ -247,7 +298,7 @@ export default function FaceRegistrationPage() {
             </TabsTrigger>
             <TabsTrigger value="info">
               <User className="mr-2 h-4 w-4" />
-              User Information
+              Student Information
             </TabsTrigger>
           </TabsList>
 
@@ -297,7 +348,7 @@ export default function FaceRegistrationPage() {
                       onClick={() => setActiveTab("info")}
                       disabled={!livenessVerified}
                     >
-                      {livenessVerified ? "Continue to User Info" : "Complete Liveness Check First"}
+                      {livenessVerified ? "Continue to Student Info" : "Complete Liveness Check First"}
                     </Button>
                   </>
                 )}
@@ -308,7 +359,7 @@ export default function FaceRegistrationPage() {
           <TabsContent value="info" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle>User Information</CardTitle>
+                <CardTitle>Student Information</CardTitle>
                 <CardDescription>Enter your details to complete the registration.</CardDescription>
               </CardHeader>
               <form onSubmit={handleSubmit}>
@@ -322,39 +373,75 @@ export default function FaceRegistrationPage() {
                   )}
                   
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="fullName" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Full Name *
+                    </Label>
                     <Input
-                      id="name"
-                      name="name"
+                      id="fullName"
+                      name="fullName"
                       placeholder="Enter your full name"
-                      value={formData.name}
+                      value={formData.fullName}
                       onChange={handleInputChange}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="studentID" className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      Student ID *
+                    </Label>
+                    <Input
+                      id="studentID"
+                      name="studentID"
+                      placeholder="Enter your student ID"
+                      value={formData.studentID}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="department" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Department
+                    </Label>
+                    <Input
+                      id="department"
+                      name="department"
+                      placeholder="Enter your department (optional)"
+                      value={formData.department}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="section" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Section
+                    </Label>
+                    <Input
+                      id="section"
+                      name="section"
+                      placeholder="Enter your section (optional)"
+                      value={formData.section}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="Enter your email address"
+                      placeholder="Enter your email (optional)"
                       value={formData.email}
                       onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="userId">User ID</Label>
-                    <Input
-                      id="userId"
-                      name="userId"
-                      placeholder="Enter a unique user ID"
-                      value={formData.userId}
-                      onChange={handleInputChange}
-                      required
                     />
                   </div>
 

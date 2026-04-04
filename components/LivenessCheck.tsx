@@ -18,8 +18,13 @@ type LivenessStep = {
   name: string
   instruction: string
   icon: React.ReactNode
-  action: (videoElement: HTMLVideoElement, prevData?: any) => Promise<boolean | { success: boolean; data?: any }>
+  action: (videoElement: HTMLVideoElement, prevData?: ShakePosition[]) => Promise<boolean | { success: boolean; data?: ShakePosition[] }>
   timeout: number // seconds
+}
+
+type ShakePosition = {
+  x: number
+  y: number
 }
 
 export const LivenessCheck: React.FC<LivenessCheckProps> = ({ onComplete, onCancel }) => {
@@ -30,12 +35,11 @@ export const LivenessCheck: React.FC<LivenessCheckProps> = ({ onComplete, onCanc
   const [error, setError] = useState<string | null>(null)
   const [stepStatus, setStepStatus] = useState<'pending' | 'in-progress' | 'success' | 'failed'>('pending')
   const [progress, setProgress] = useState(0)
-  const [shakePositions, setShakePositions] = useState<{ x: number; y: number }[]>([])
+  const [shakePositions, setShakePositions] = useState<ShakePosition[]>([])
   const [countdown, setCountdown] = useState<number | null>(null)
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const stepStartRef = useRef<number>(0)
   const executingRef = useRef(false)
   const stepStatusRef = useRef(stepStatus)
@@ -53,10 +57,6 @@ export const LivenessCheck: React.FC<LivenessCheckProps> = ({ onComplete, onCanc
     if (checkIntervalRef.current) {
       clearInterval(checkIntervalRef.current)
       checkIntervalRef.current = null
-    }
-    if (advanceTimeoutRef.current) {
-      clearTimeout(advanceTimeoutRef.current)
-      advanceTimeoutRef.current = null
     }
     executingRef.current = false
   }, [])
@@ -133,7 +133,7 @@ export const LivenessCheck: React.FC<LivenessCheckProps> = ({ onComplete, onCanc
         if (!loaded) {
           setError('Failed to load face detection models. Please refresh and try again.')
         }
-      } catch (err) {
+      } catch {
         setError('Error loading face detection models')
       } finally {
         setLoading(false)
@@ -178,19 +178,6 @@ const executeStep = useCallback(async () => {
         clearTimers()
         setProgress(100)
         setCountdown(0)
-        const completedStepId = currentStep.id
-        advanceTimeoutRef.current = setTimeout(() => {
-          if (activeStepIdRef.current !== completedStepId) return
-          if (currentStepIndex < steps.length - 1) {
-            setCurrentStepIndex(prev => prev + 1)
-            setStepStatus('pending')
-            setProgress(0)
-            setCountdown(null)
-          } else {
-            // All steps completed
-            onComplete(true)
-          }
-        }, 1000)
       } else {
         setShakePositions(result.data)
       }
@@ -202,19 +189,6 @@ const executeStep = useCallback(async () => {
         clearTimers()
         setProgress(100)
         setCountdown(0)
-        const completedStepId = currentStep.id
-        advanceTimeoutRef.current = setTimeout(() => {
-          if (activeStepIdRef.current !== completedStepId) return
-          if (currentStepIndex < steps.length - 1) {
-            setCurrentStepIndex(prev => prev + 1)
-            setStepStatus('pending')
-            setProgress(0)
-            setCountdown(null)
-          } else {
-            // All steps completed
-            onComplete(true)
-          }
-        }, 1000)
       }
     }
   } catch (err) {
@@ -225,7 +199,22 @@ const executeStep = useCallback(async () => {
   finally {
     executingRef.current = false
   }
-}, [clearTimers, currentStep, currentStepIndex, shakePositions, steps.length, onComplete])
+}, [clearTimers, currentStep, shakePositions])
+
+const handleNextStep = () => {
+  if (stepStatus !== 'success') return
+
+  if (currentStepIndex < steps.length - 1) {
+    setCurrentStepIndex(prev => prev + 1)
+    setStepStatus('pending')
+    setProgress(0)
+    setCountdown(null)
+    setShakePositions([])
+    activeStepIdRef.current = null
+  } else {
+    onComplete(true)
+  }
+}
 
 // Timer and step execution loop (single runner; no stacked intervals)
 useEffect(() => {
@@ -389,6 +378,11 @@ return (
     </CardContent>
     
     <CardFooter className="flex justify-center gap-4">
+      {stepStatus === 'success' && (
+        <Button onClick={handleNextStep} variant="default">
+          Next Step
+        </Button>
+      )}
       {stepStatus === 'failed' && (
         <Button onClick={handleRetry} variant="default">
           Try Again

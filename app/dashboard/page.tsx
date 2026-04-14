@@ -40,7 +40,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         <Dashboard
           totalStudents={totalStudents}
           presentStudents={presentStudents}
@@ -48,15 +48,15 @@ export default function DashboardPage() {
           lastUpdateTime={lastUpdateTime}
         />
 
-        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b bg-muted/20">
+        <div className="rounded-2xl border border-white/5 bg-card shadow-2xl overflow-hidden backdrop-blur-md">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 bg-white/5">
             <div className="flex items-center gap-2">
-              <ListChecks size={14} className="text-muted-foreground" />
-              <span className="text-sm font-medium">Attendance Records</span>
+              <ListChecks size={14} className="text-slate-400" />
+              <span className="text-sm font-semibold text-white">Attendance Records</span>
             </div>
             {attendance.length > 0 && (
-              <span className="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
-                {attendance.length} entries
+              <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full">
+                {attendance.length} ENTRIES
               </span>
             )}
           </div>

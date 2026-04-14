@@ -61,28 +61,28 @@ const WebcamCapture = ({
       </div>
 
       {livenessPassed ? (
-        <div className="flex items-center gap-2.5 w-full max-w-md px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200">
-          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-100 flex-shrink-0">
-            <Check size={14} className="text-emerald-600" />
+        <div className="flex items-center gap-3 w-full max-w-md px-5 py-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20 flex-shrink-0">
+            <Check size={16} className="text-emerald-400" />
           </div>
           <div>
-            <p className="text-sm font-medium text-emerald-800">Liveness Verified</p>
-            <p className="text-xs text-emerald-600">Your face has been verified as real</p>
+            <p className="text-sm font-bold text-emerald-400">Liveness Verified</p>
+            <p className="text-xs text-emerald-500/70 font-medium">Identity confirmed successfully</p>
           </div>
         </div>
       ) : (
         <Button
           onClick={() => setShowLivenessCheck(true)}
-          className="bg-blue-600 hover:bg-blue-500 text-white gap-2"
+          className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 rounded-xl px-6 shadow-lg shadow-blue-500/20"
         >
-          <Shield size={14} />
+          <Shield size={16} />
           Start Liveness Check
         </Button>
       )}
 
       {livenessPassed && (
-        <Button onClick={capture} variant="outline" size="sm" className="gap-2">
-          <Camera size={13} />
+        <Button onClick={capture} variant="outline" size="sm" className="gap-2 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
+          <Camera size={14} />
           Recapture Image
         </Button>
       )}
@@ -216,51 +216,45 @@ export default function FaceRegistrationPage() {
   if (isRegistered) {
     return (
       <div className="container mx-auto px-4 sm:px-6 py-8 max-w-lg">
-        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-          <div className="px-6 py-5 bg-emerald-50 border-b border-emerald-100">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100">
-                <Check size={20} className="text-emerald-600" />
+        <div className="rounded-2xl border border-white/5 bg-card shadow-2xl overflow-hidden backdrop-blur-md">
+          <div className="px-6 py-6 bg-emerald-500/10 border-b border-white/5">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20">
+                <Check size={24} className="text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-emerald-900">Registration Successful</h2>
-                <p className="text-sm text-emerald-700">Student has been registered successfully</p>
+                <h2 className="text-lg font-bold text-white tracking-tight">Registration Successful</h2>
+                <p className="text-sm text-emerald-400/80 font-medium">Student data has been securely saved</p>
               </div>
             </div>
           </div>
 
           <div className="p-6">
-            <div className="flex flex-col items-center gap-5">
+            <div className="flex flex-col items-center gap-6">
               {capturedImage && (
-                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border shadow-sm">
+                <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-emerald-500/30 shadow-xl">
                   <img src={capturedImage} alt="Registered face" className="w-full h-full object-cover" />
                 </div>
               )}
-              <div className="w-full space-y-2">
-                <div className="flex items-center justify-between py-2.5 border-b last:border-0">
-                  <span className="text-sm text-muted-foreground">Full Name</span>
-                  <span className="text-sm font-medium">{formData.fullName}</span>
+              <div className="w-full space-y-3">
+                <div className="flex items-center justify-between py-3 border-b border-white/5">
+                  <span className="text-sm font-medium text-slate-400">Full Name</span>
+                  <span className="text-sm font-bold text-white">{formData.fullName}</span>
                 </div>
-                <div className="flex items-center justify-between py-2.5 border-b last:border-0">
-                  <span className="text-sm text-muted-foreground">Student ID</span>
-                  <span className="text-sm font-medium font-mono">{formData.studentID}</span>
+                <div className="flex items-center justify-between py-3 border-b border-white/5">
+                  <span className="text-sm font-medium text-slate-400">Student ID</span>
+                  <span className="text-sm font-bold text-blue-400 font-mono tracking-wider">{formData.studentID}</span>
                 </div>
                 {formData.department && (
-                  <div className="flex items-center justify-between py-2.5 border-b last:border-0">
-                    <span className="text-sm text-muted-foreground">Department</span>
-                    <span className="text-sm font-medium">{formData.department}</span>
-                  </div>
-                )}
-                {formData.section && (
-                  <div className="flex items-center justify-between py-2.5 border-b last:border-0">
-                    <span className="text-sm text-muted-foreground">Section</span>
-                    <span className="text-sm font-medium">{formData.section}</span>
+                  <div className="flex items-center justify-between py-3 border-b border-white/5">
+                    <span className="text-sm font-medium text-slate-400">Department</span>
+                    <span className="text-sm font-bold text-white">{formData.department}</span>
                   </div>
                 )}
                 {formData.email && (
-                  <div className="flex items-center justify-between py-2.5">
-                    <span className="text-sm text-muted-foreground">Email</span>
-                    <span className="text-sm font-medium">{formData.email}</span>
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-sm font-medium text-slate-400">Email</span>
+                    <span className="text-sm font-bold text-white">{formData.email}</span>
                   </div>
                 )}
               </div>
@@ -269,7 +263,7 @@ export default function FaceRegistrationPage() {
 
           <div className="px-6 pb-6">
             <Button
-              className="w-full gap-2"
+              className="w-full gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold h-11 rounded-xl shadow-lg shadow-emerald-600/20"
               onClick={() => {
                 setCapturedImage(null)
                 setLivenessVerified(false)
@@ -280,7 +274,7 @@ export default function FaceRegistrationPage() {
               }}
             >
               Register Another Student
-              <ArrowRight size={14} />
+              <ArrowRight size={16} />
             </Button>
           </div>
         </div>
@@ -300,23 +294,23 @@ export default function FaceRegistrationPage() {
       </div>
 
       <Tabs defaultValue="capture" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 mb-5 h-10">
-          <TabsTrigger value="capture" className="gap-2 text-sm">
-            <Camera size={13} />
+        <TabsList className="grid w-full grid-cols-2 mb-6 h-12 bg-white/5 border border-white/5 rounded-2xl p-1 backdrop-blur-md">
+          <TabsTrigger value="capture" className="gap-2 text-sm font-semibold rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg">
+            <Camera size={14} />
             Capture & Verify
           </TabsTrigger>
-          <TabsTrigger value="info" className="gap-2 text-sm">
-            <User size={13} />
+          <TabsTrigger value="info" className="gap-2 text-sm font-semibold rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg">
+            <User size={14} />
             Student Info
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="capture" className="mt-0">
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b bg-muted/20">
-              <h2 className="text-sm font-semibold">Face Capture & Liveness Verification</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Complete the liveness check to verify your identity
+        <TabsContent value="capture" className="mt-0 outline-none">
+          <div className="rounded-2xl border border-white/5 bg-card shadow-2xl overflow-hidden backdrop-blur-md">
+            <div className="px-5 py-4 border-b border-white/5 bg-white/5">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Face Capture & Verification</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Complete the automated liveness check for security
               </p>
             </div>
 
@@ -337,12 +331,12 @@ export default function FaceRegistrationPage() {
                   </div>
                 )}
 
-                <div className="flex items-start gap-3 w-full p-3.5 rounded-lg bg-blue-50 border border-blue-100 max-w-md">
-                  <AlertCircle size={15} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 w-full p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 max-w-md">
+                  <AlertCircle size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-blue-800">Liveness Check Tips</p>
-                    <p className="text-xs text-blue-600 mt-0.5">
-                      You&apos;ll be asked to perform several actions to prove you&apos;re a real person. Ensure your face is well-lit.
+                    <p className="text-xs font-bold text-blue-400 uppercase tracking-tight">Requirement Checklist</p>
+                    <p className="text-[11px] text-blue-100/70 mt-1 leading-relaxed">
+                      Maintain neutral expression. Ensure high lighting on face. Perform requested head movements naturally.
                     </p>
                   </div>
                 </div>
@@ -350,81 +344,80 @@ export default function FaceRegistrationPage() {
             </div>
 
             {capturedImage && (
-              <div className="px-5 pb-5 flex justify-center gap-3">
-                <Button variant="outline" onClick={retakeImage} size="sm" className="gap-2">
-                  <RotateCcw size={13} />
-                  Retake
+              <div className="px-6 pb-6 flex justify-center gap-4">
+                <Button variant="outline" onClick={retakeImage} size="sm" className="gap-2 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
+                  <RotateCcw size={14} />
+                  Retake Video
                 </Button>
                 <Button
                   onClick={() => setActiveTab("info")}
                   disabled={!livenessVerified}
                   size="sm"
-                  className="gap-2"
+                  className="gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl"
                 >
-                  {livenessVerified ? "Continue to Student Info" : "Complete Liveness Check First"}
-                  {livenessVerified && <ArrowRight size={13} />}
+                  {livenessVerified ? "Continue Registration" : "Verify Identity First"}
+                  {livenessVerified && <ArrowRight size={14} />}
                 </Button>
               </div>
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="info" className="mt-0">
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b bg-muted/20">
-              <h2 className="text-sm font-semibold">Student Information</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Enter student details to complete registration
+        <TabsContent value="info" className="mt-0 outline-none">
+          <div className="rounded-2xl border border-white/5 bg-card shadow-2xl overflow-hidden backdrop-blur-md">
+            <div className="px-5 py-4 border-b border-white/5 bg-white/5">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Student Profile Details</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Complete the form to finalize enrollment
               </p>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="p-5 space-y-4">
+              <div className="p-6 space-y-6">
                 {error && (
-                  <div className="flex items-start gap-2.5 p-3.5 rounded-lg bg-red-50 border border-red-200">
-                    <AlertCircle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-700">{error}</p>
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                    <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-red-300">{error}</p>
                   </div>
                 )}
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="fullName" className="text-xs font-medium flex items-center gap-1.5">
-                      <User size={12} className="text-muted-foreground" />
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <User size={12} className="text-blue-400" />
                       Full Name <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="fullName"
                       name="fullName"
-                      placeholder="Enter full name"
+                      placeholder="e.g. John Doe"
                       value={formData.fullName}
                       onChange={handleInputChange}
                       required
-                      className="h-9 text-sm"
+                      className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl focus:ring-blue-500/50"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="studentID" className="text-xs font-medium flex items-center gap-1.5">
-                      <BookOpen size={12} className="text-muted-foreground" />
+                  <div className="space-y-2">
+                    <Label htmlFor="studentID" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <BookOpen size={12} className="text-blue-400" />
                       Student ID <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="studentID"
                       name="studentID"
-                      placeholder="Enter student ID"
+                      placeholder="e.g. STU-2024-001"
                       value={formData.studentID}
                       onChange={handleInputChange}
                       required
-                      className="h-9 text-sm"
+                      className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white font-mono rounded-xl focus:ring-blue-500/50"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="department" className="text-xs font-medium flex items-center gap-1.5">
-                      <Users size={12} className="text-muted-foreground" />
+                  <div className="space-y-2">
+                    <Label htmlFor="department" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <Users size={12} className="text-blue-400" />
                       Department
-                      <span className="text-muted-foreground/60 font-normal">(optional)</span>
                     </Label>
                     <Input
                       id="department"
@@ -432,59 +425,57 @@ export default function FaceRegistrationPage() {
                       placeholder="e.g. Computer Science"
                       value={formData.department}
                       onChange={handleInputChange}
-                      className="h-9 text-sm"
+                      className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="section" className="text-xs font-medium flex items-center gap-1.5">
-                      <Users size={12} className="text-muted-foreground" />
+                  <div className="space-y-2">
+                    <Label htmlFor="section" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <Users size={12} className="text-blue-400" />
                       Section
-                      <span className="text-muted-foreground/60 font-normal">(optional)</span>
                     </Label>
                     <Input
                       id="section"
                       name="section"
-                      placeholder="e.g. Section A"
+                      placeholder="e.g. CS-A"
                       value={formData.section}
                       onChange={handleInputChange}
-                      className="h-9 text-sm"
+                      className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl"
                     />
                   </div>
 
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="email" className="text-xs font-medium flex items-center gap-1.5">
-                      <Mail size={12} className="text-muted-foreground" />
-                      Email
-                      <span className="text-muted-foreground/60 font-normal">(optional)</span>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="email" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <Mail size={12} className="text-blue-400" />
+                      Email Address
                     </Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="student@example.com"
+                      placeholder="john.doe@university.edu"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="h-9 text-sm"
+                      className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl"
                     />
                   </div>
                 </div>
 
                 {capturedImage ? (
-                  <div className="flex items-center gap-3 p-3.5 rounded-lg border bg-muted/20">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border border-border flex-shrink-0">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex-shrink-0">
                       <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Face Image Captured</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-sm font-bold text-white">Identity Matrix Confirmed</p>
+                      <div className="flex items-center gap-2 mt-1">
                         {livenessVerified ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">
-                            <Check size={10} /> Liveness Verified
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                            <Check size={12} /> Secure Verified
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
-                            <AlertCircle size={10} /> Not Verified
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                            <AlertCircle size={12} /> Pending Verification
                           </span>
                         )}
                       </div>
@@ -494,50 +485,39 @@ export default function FaceRegistrationPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setActiveTab("capture")}
-                      className="text-xs text-muted-foreground hover:text-foreground flex-shrink-0"
+                      className="text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-lg h-8"
                     >
-                      Retake
+                      Swap
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-start gap-2.5 p-3.5 rounded-lg bg-red-50 border border-red-200">
-                    <AlertCircle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                    <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-red-800">Face Image Required</p>
-                      <p className="text-xs text-red-600 mt-0.5">
-                        Please{" "}
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("capture")}
-                          className="underline font-medium hover:text-red-800"
-                        >
-                          complete the liveness check
-                        </button>{" "}
-                        before submitting.
+                      <p className="text-sm font-bold text-red-400 uppercase tracking-tight">Biometric Step Required</p>
+                      <p className="text-xs text-red-300/80 mt-1 leading-relaxed">
+                        Security protocols require you to <button type="button" onClick={() => setActiveTab("capture")} className="text-white underline font-bold hover:text-white/80">authenticate via camera</button> before finishing.
                       </p>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="px-5 pb-5">
+              <div className="px-6 pb-6 pt-2">
                 <Button
                   type="submit"
-                  className="w-full gap-2"
+                  className="w-full gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold h-12 rounded-2xl shadow-xl shadow-blue-600/20"
                   disabled={isRegistering || !capturedImage || !livenessVerified}
                 >
                   {isRegistering ? (
                     <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                      </svg>
-                      Registering...
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Registering Biometrics...
                     </>
                   ) : (
                     <>
-                      Complete Registration
-                      <ArrowRight size={14} />
+                      Confirm Enrollment
+                      <ArrowRight size={18} />
                     </>
                   )}
                 </Button>

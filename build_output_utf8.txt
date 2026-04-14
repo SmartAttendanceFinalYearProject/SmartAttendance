@@ -1,0 +1,92 @@
+﻿
+> facial-recognition-attendance@0.1.0 build
+> next build
+
+   ▲ Next.js 15.1.6
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+node.exe : 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandEr 
+   ror
+ 
+Failed to compile.
+
+./app/register/page.tsx
+236:19  Warning: Using `<img>` could result 
+in slower LCP and higher bandwidth. Consider 
+using `<Image />` from `next/image` or a 
+custom image loader to automatically optimize 
+images. This may incur additional usage or 
+cost from your provider. See: https://nextjs.o
+rg/docs/messages/no-img-element  
+@next/next/no-img-element
+332:21  Warning: Using `<img>` could result 
+in slower LCP and higher bandwidth. Consider 
+using `<Image />` from `next/image` or a 
+custom image loader to automatically optimize 
+images. This may incur additional usage or 
+cost from your provider. See: https://nextjs.o
+rg/docs/messages/no-img-element  
+@next/next/no-img-element
+476:23  Warning: Using `<img>` could result 
+in slower LCP and higher bandwidth. Consider 
+using `<Image />` from `next/image` or a 
+custom image loader to automatically optimize 
+images. This may incur additional usage or 
+cost from your provider. See: https://nextjs.o
+rg/docs/messages/no-img-element  
+@next/next/no-img-element
+
+./components/LivenessCheck.tsx
+119:10  Error: 'stepsReady' is assigned a 
+value but never used.  
+@typescript-eslint/no-unused-vars
+
+./components/ui/calendar.tsx
+57:25  Error: 'props' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+58:26  Error: 'props' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+
+./components/ui/chart.tsx
+72:7  Error: '_' is defined but never used.  
+@typescript-eslint/no-unused-vars
+
+./components/ui/input.tsx
+4:18  Error: An interface declaring no 
+members is equivalent to its supertype.  
+@typescript-eslint/no-empty-object-type
+
+./components/ui/label.tsx
+4:18  Error: An interface declaring no 
+members is equivalent to its supertype.  
+@typescript-eslint/no-empty-object-type
+
+./components/ui/use-toast.ts
+21:7  Error: 'actionTypes' is assigned a 
+value but only used as a type.  
+@typescript-eslint/no-unused-vars
+
+./components/WebcamFeed.tsx
+70:9  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider 
+using `<Image />` from `next/image` or a 
+custom image loader to automatically optimize 
+images. This may incur additional usage or 
+cost from your provider. See: https://nextjs.o
+rg/docs/messages/no-img-element  
+@next/next/no-img-element
+
+info  - Need to disable some ESLint rules? 
+Learn more here: https://nextjs.org/docs/app/a
+pi-reference/config/eslint#disabling-rules
+

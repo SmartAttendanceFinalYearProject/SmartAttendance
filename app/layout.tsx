@@ -2,7 +2,6 @@ import "./globals.css"
 import localFont from "next/font/local"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-// import { ShieldCheck } from "lucide-react"
 import { Background } from "@/components/ui/background"
 
 const archivGrotesk = localFont({
@@ -58,11 +57,8 @@ export default function RootLayout({
         <nav className="sticky top-0 z-50 w-full border-b border-white/5 bg-transparent backdrop-blur-lg">
           <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
             <Link href="/" className="flex items-center space-x-2 transition-all hover:opacity-80">
-              {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <ShieldCheck size={22} className="text-white" />
-              </div> */}
               <span className="text-xl font-extrabold tracking-tight text-white">
-                SMART<span className="text-blue-400">Attendance</span>
+                SMART<span className="text-blue-400 pl-3">ATTENDANCE</span>
               </span>
             </Link>
             

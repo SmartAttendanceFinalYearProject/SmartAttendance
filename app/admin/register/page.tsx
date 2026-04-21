@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, RotateCcw, ArrowRight } from "lucide-react"
+import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, RotateCcw, ArrowRight, Calendar, Hash, BarChart3 } from "lucide-react"
 import { LivenessCheck } from "@/components/LivenessCheck"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const WebcamCapture = ({
   onCapture,
@@ -99,6 +100,9 @@ export default function AdminRegistrationPage() {
     department: "",
     section: "",
     email: "",
+    batch: "",
+    class_year: "1st",
+    semester: "1st",
   })
   const [isRegistering, setIsRegistering] = useState(false)
   const [isRegistered, setIsRegistered] = useState(false)
@@ -175,6 +179,9 @@ export default function AdminRegistrationPage() {
       if (formData.department) formDataToSend.append("department", formData.department)
       if (formData.section) formDataToSend.append("section", formData.section)
       if (formData.email) formDataToSend.append("email", formData.email)
+      formDataToSend.append("batch", formData.batch)
+      formDataToSend.append("class_year", formData.class_year)
+      formDataToSend.append("semester", formData.semester)
 
       formDataToSend.append("image", file)
 
@@ -200,6 +207,9 @@ export default function AdminRegistrationPage() {
         department: "",
         section: "",
         email: "",
+        batch: "",
+        class_year: "1st",
+        semester: "1st",
       })
       setCapturedImage(null)
       setLivenessVerified(false)
@@ -252,9 +262,21 @@ export default function AdminRegistrationPage() {
                   </div>
                 )}
                 {formData.email && (
-                  <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center justify-between py-3 border-b border-white/5">
                     <span className="text-sm font-medium text-slate-400">Email</span>
                     <span className="text-sm font-bold text-white">{formData.email}</span>
+                  </div>
+                )}
+                {formData.batch && (
+                  <div className="flex items-center justify-between py-3 border-b border-white/5">
+                    <span className="text-sm font-medium text-slate-400">Batch / Year</span>
+                    <span className="text-sm font-bold text-white">{formData.batch} ({formData.class_year})</span>
+                  </div>
+                )}
+                {formData.semester && (
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-sm font-medium text-slate-400">Semester</span>
+                    <span className="text-sm font-bold text-white">{formData.semester}</span>
                   </div>
                 )}
               </div>
@@ -267,7 +289,7 @@ export default function AdminRegistrationPage() {
               onClick={() => {
                 setCapturedImage(null)
                 setLivenessVerified(false)
-                setFormData({ fullName: "", studentID: "", department: "", section: "", email: "" })
+                setFormData({ fullName: "", studentID: "", department: "", section: "", email: "", batch: "", class_year: "1st", semester: "1st" })
                 setIsRegistered(false)
                 setActiveTab("capture")
                 setError(null)
@@ -458,6 +480,67 @@ export default function AdminRegistrationPage() {
                       onChange={handleInputChange}
                       className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl"
                     />
+                  </div>
+
+                  {/* Academic Info Divider */}
+                  <div className="sm:col-span-2 pt-2 pb-1 border-b border-white/5">
+                    <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest px-1">Academic Details</h3>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="batch" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <Hash size={12} className="text-blue-400" />
+                      Batch / Enrollment Year <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="batch"
+                      name="batch"
+                      placeholder="e.g. 2024"
+                      value={formData.batch}
+                      onChange={handleInputChange}
+                      required
+                      className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl focus:ring-blue-500/50"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="class_year" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <Calendar size={12} className="text-blue-400" />
+                      Class Year <span className="text-red-500">*</span>
+                    </Label>
+                    <Select 
+                      value={formData.class_year} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, class_year: value }))}
+                    >
+                      <SelectTrigger className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl">
+                        <SelectValue placeholder="Select Year" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-white/10 text-white">
+                        <SelectItem value="1st">1st Year</SelectItem>
+                        <SelectItem value="2nd">2nd Year</SelectItem>
+                        <SelectItem value="3rd">3rd Year</SelectItem>
+                        <SelectItem value="4th">4th Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="semester" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                      <BarChart3 size={12} className="text-blue-400" />
+                      Semester <span className="text-red-500">*</span>
+                    </Label>
+                    <Select 
+                      value={formData.semester} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, semester: value }))}
+                    >
+                      <SelectTrigger className="h-11 bg-white/5 backdrop-blur-sm border-white/10 text-white rounded-xl">
+                        <SelectValue placeholder="Select Semester" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-white/10 text-white">
+                        <SelectItem value="1st">1st Semester</SelectItem>
+                        <SelectItem value="2nd">2nd Semester</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

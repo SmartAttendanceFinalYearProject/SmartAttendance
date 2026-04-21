@@ -68,7 +68,7 @@ export default function RootLayout({
                   <Link href="/">Home</Link>
                 </Button>
                 <Button variant="ghost" size="sm" className="font-semibold text-slate-300 hover:text-white hover:bg-white/5" asChild>
-                  <Link href="/dashboard">Dashboard</Link>
+                  <Link href="/login">Login</Link>
                 </Button>
               </div>
               <Button size="sm" className="font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 px-5" asChild>

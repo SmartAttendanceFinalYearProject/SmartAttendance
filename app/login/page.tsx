@@ -140,12 +140,6 @@ export default function LoginPage() {
                 </span>
               )}
             </Button>
-            <p className="mt-6 text-center text-sm text-slate-400">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="font-bold text-blue-400 hover:text-blue-300 transition-colors">
-                Register Now
-              </Link>
-            </p>
           </CardFooter>
         </form>
       </Card>

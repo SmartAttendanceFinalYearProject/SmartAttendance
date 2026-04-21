@@ -48,8 +48,14 @@ export default function LoginPage() {
         className: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
       })
 
-      // Redirect to dashboard
-      router.push("/dashboard")
+      // Redirect based on role
+      if (data.role === "teacher") {
+        router.push("/teacher/dashboard")
+      } else if (data.role === "admin") {
+        router.push("/admin/analytics")
+      } else {
+        router.push("/dashboard")
+      }
     } catch (error: any) {
       toast({
         title: "Login Failed",

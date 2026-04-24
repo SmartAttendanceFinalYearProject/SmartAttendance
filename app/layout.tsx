@@ -3,6 +3,7 @@ import localFont from "next/font/local"
 import Link from "next/link"
 import { Background } from "@/components/ui/background"
 import Navbar from "@/components/Navbar"
+import { Toaster } from "sonner"  
 
 const archivGrotesk = localFont({
   src: [
@@ -57,6 +58,7 @@ export default function RootLayout({
         <Navbar />
         <main className="animate-fade-in-up relative z-10">
           {children}
+          <Toaster position="bottom-right" richColors />
         </main>
         
         <footer className="border-t border-white/5 py-8 bg-black/20 backdrop-blur-sm relative z-10">

@@ -58,7 +58,7 @@ export default function RootLayout({
         <Navbar />
         <main className="animate-fade-in-up relative z-10">
           {children}
-          <Toaster position="bottom-right" richColors />
+          <Toaster position="bottom-right" richColors  closeButton={true}/>
         </main>
         
         <footer className="border-t border-white/5 py-8 bg-black/20 backdrop-blur-sm relative z-10">

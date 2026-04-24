@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LogOut, User, LayoutDashboard, Camera, UserPlus, BarChart3 } from "lucide-react"
+import { LogOut, LayoutDashboard, Camera, UserPlus, BarChart3, Blocks } from "lucide-react"
 
 export default function Navbar() {
   const [role, setRole] = useState<string | null>(null)
@@ -86,6 +86,12 @@ export default function Navbar() {
                   <Link href="/admin/register">
                     <UserPlus size={16} className="mr-2" />
                     Registration
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className={`font-semibold transition-all ${pathname === "/admin/models" ? "text-blue-400 bg-white/5" : "text-slate-300 hover:text-white hover:bg-white/5"}`} asChild>
+                  <Link href="/admin/models">
+                    <Blocks size={16} className="mr-2" />
+                    Manage Models
                   </Link>
                 </Button>
               </>

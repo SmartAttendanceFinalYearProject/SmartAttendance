@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"  
 import { User, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react"
 
 export default function LoginPage() {
@@ -15,14 +15,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      // Base URL should be configured based on backend environment
       const response = await fetch("http://localhost:8000/login", {
         method: "POST",
         headers: {
@@ -42,26 +40,22 @@ export default function LoginPage() {
       localStorage.setItem("user_role", data.role)
       localStorage.setItem("full_name", data.full_name)
 
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${data.full_name || username}!`,
-        className: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-      })
+      // Show success toast
+      toast.success(`Welcome back, ${data.full_name || username}!`)
 
       // Redirect based on role
-      if (data.role === "teacher") {
-        router.push("/teacher/dashboard")
-      } else if (data.role === "admin") {
-        router.push("/admin/analytics")
-      } else {
-        router.push("/dashboard")
-      }
+      setTimeout(() => {
+        if (data.role === "teacher") {
+          router.push("/teacher/dashboard")
+        } else if (data.role === "admin") {
+          router.push("/admin/analytics")
+        } else {
+          router.push("/dashboard")
+        }
+      }, 1000)
     } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: error.message || "Invalid username or password",
-        variant: "destructive",
-      })
+      // Show error toast
+      toast.error(error.message || "Invalid username or password")
     } finally {
       setIsLoading(false)
     }

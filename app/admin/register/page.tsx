@@ -520,6 +520,7 @@ export default function AdminRegistrationPage() {
                         <SelectItem value="2nd">2nd Year</SelectItem>
                         <SelectItem value="3rd">3rd Year</SelectItem>
                         <SelectItem value="4th">4th Year</SelectItem>
+                        <SelectItem value="5th">5th Year</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -217,7 +217,7 @@ export default function AdminModelsPage() {
       <p className="text-sm text-slate-400 mb-6">Create, update, and delete Subjects, Teachers, and Classes from one page.</p>
 
       {/* ── Custom Tab Bar ── */}
-      <div className="flex gap-2 mb-6 p-1 rounded-2xl bg-white/5 border border-white/5 w-fit">
+      <div className="flex gap-1 mb-6 p-1 rounded-2xl bg-white/5 border border-white/5 w-full">
         {tabs.map((t) => {
           const isActive = activeTab === t.value
           return (
@@ -225,9 +225,9 @@ export default function AdminModelsPage() {
               key={t.value}
               onClick={() => setActiveTab(t.value)}
               className={`
-                flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer
+                flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer
                 ${isActive
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/50"
+                  ? "bg-[#0f1e40] text-blue-300 shadow-lg shadow-blue-950/60 border border-blue-900/50"
                   : "text-slate-400 hover:text-white hover:bg-white/10"}
               `}
             >
@@ -244,7 +244,7 @@ export default function AdminModelsPage() {
           <Card className="bg-card/40 border-white/5">
             <CardHeader><CardTitle>Subject Form</CardTitle></CardHeader>
             <CardContent>
-              <form className="flex flex-col gap-3 max-w-sm" onSubmit={submitSubject}>
+              <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitSubject}>
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-400">Subject Name</Label>
                   <Input
@@ -293,7 +293,7 @@ export default function AdminModelsPage() {
           <Card className="bg-card/40 border-white/5">
             <CardHeader><CardTitle>Teacher Form</CardTitle></CardHeader>
             <CardContent>
-              <form className="flex flex-col gap-3 max-w-sm" onSubmit={submitTeacher}>
+              <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitTeacher}>
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-400">Full Name</Label>
                   <Input
@@ -359,7 +359,7 @@ export default function AdminModelsPage() {
           <Card className="bg-card/40 border-white/5">
             <CardHeader><CardTitle>Class Form</CardTitle></CardHeader>
             <CardContent>
-              <form className="flex flex-col gap-4 max-w-lg" onSubmit={submitClass}>
+              <form className="flex flex-col gap-4 max-w-lg mx-auto" onSubmit={submitClass}>
 
                 {/* Class Name */}
                 <div className="space-y-1">
@@ -399,7 +399,7 @@ export default function AdminModelsPage() {
                       value={classForm.start_date}
                       onChange={(e) => setClassForm((p) => ({ ...p, start_date: e.target.value }))}
                       required
-                      className="cursor-pointer"
+                      className="cursor-pointer [color-scheme:dark] bg-slate-900/80 border-white/10 text-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -409,7 +409,7 @@ export default function AdminModelsPage() {
                       value={classForm.end_date}
                       onChange={(e) => setClassForm((p) => ({ ...p, end_date: e.target.value }))}
                       required
-                      className="cursor-pointer"
+                      className="cursor-pointer [color-scheme:dark] bg-slate-900/80 border-white/10 text-white"
                     />
                   </div>
                 </div>

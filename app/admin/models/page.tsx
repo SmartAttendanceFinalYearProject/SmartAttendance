@@ -11,6 +11,7 @@ import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus } from "lucide-r
 
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
+type Student = { id: string; fullName: string; studentID: string }
 type DaySchedule = { day: string; start_time: string; end_time: string }
 type ClassItem = {
   id: string
@@ -37,7 +38,7 @@ const emptyClassForm = {
   start_date: "",
   end_date: "",
   scheduleRows: [emptyScheduleRow()],
-  students: "",
+  students: [] as string[],
 }
 
 type Tab = "subjects" | "teachers" | "classes"
@@ -47,6 +48,8 @@ export default function AdminModelsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [classes, setClasses] = useState<ClassItem[]>([])
+  const [students, setStudents] = useState<Student[]>([])
+  const [studentSearch, setStudentSearch] = useState("")
   const [loading, setLoading] = useState(true)
 
   const [subjectForm, setSubjectForm] = useState({ subject_name: "", subject_code: "" })
@@ -65,25 +68,33 @@ export default function AdminModelsPage() {
 
   const fetchAll = async () => {
     try {
-      const [subjectRes, teacherRes, classRes] = await Promise.all([
+      const [subjectRes, teacherRes, classRes, studentRes] = await Promise.all([
         fetch(`${API}/subjects`, { headers: authHeader }),
         fetch(`${API}/admin/teachers`, { headers: authHeader }),
         fetch(`${API}/classes`, { headers: authHeader }),
+        fetch(`${API}/admin/students`, { headers: authHeader }),
       ])
 
-      if (!subjectRes.ok) throw new Error("Failed to load subjects")
-      if (!teacherRes.ok) throw new Error("Failed to load teachers")
-      if (!classRes.ok) throw new Error("Failed to load classes")
+      // Each resource is independent — one failure won't block the others
+      if (subjectRes.ok) setSubjects(await subjectRes.json())
+      else toast.error("Could not load subjects")
 
-      setSubjects(await subjectRes.json())
-      setTeachers(await teacherRes.json())
-      setClasses(await classRes.json())
+      if (teacherRes.ok) setTeachers(await teacherRes.json())
+      else toast.error("Could not load teachers")
+
+      if (studentRes.ok) setStudents(await studentRes.json())
+      else toast.error("Could not load student list")
+
+      if (classRes.ok) setClasses(await classRes.json())
+      else toast.error("Could not load classes — check backend logs")
+
     } catch (error: any) {
-      toast.error(error.message || "Could not load data")
+      toast.error(error.message || "Network error — could not reach backend")
     } finally {
       setLoading(false)
     }
   }
+
 
   useEffect(() => {
     fetchAll()
@@ -153,10 +164,7 @@ export default function AdminModelsPage() {
         schedule: {
           schedule: classForm.scheduleRows,
         },
-        students: classForm.students
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean),
+        students: classForm.students,
       }
 
       const res = await fetch(endpoint, {
@@ -480,14 +488,66 @@ export default function AdminModelsPage() {
                   </Button>
                 </div>
 
-                {/* Students */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Student IDs (comma separated)</Label>
+                {/* Students multi-select */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                    Students
+                    {classForm.students.length > 0 && (
+                      <span className="ml-2 text-blue-400 normal-case font-normal">
+                        {classForm.students.length} selected
+                      </span>
+                    )}
+                  </Label>
+
+                  {/* Search */}
                   <Input
-                    placeholder="e.g. stu001, stu002, stu003"
-                    value={classForm.students}
-                    onChange={(e) => setClassForm((p) => ({ ...p, students: e.target.value }))}
+                    placeholder="Search students by name or ID…"
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="bg-slate-900/60 border-white/10 text-white placeholder:text-slate-500"
                   />
+
+                  {students.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic py-2">
+                      No registered students found.
+                    </p>
+                  ) : (
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10 bg-slate-900/40 divide-y divide-white/5">
+                      {students
+                        .filter((s) =>
+                          !studentSearch ||
+                          s.fullName.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                          s.studentID.toLowerCase().includes(studentSearch.toLowerCase())
+                        )
+                        .map((s) => {
+                          const checked = classForm.students.includes(s.id)
+                          return (
+                            <label
+                              key={s.id}
+                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                                checked ? "bg-blue-900/30" : "hover:bg-white/5"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  setClassForm((p) => ({
+                                    ...p,
+                                    students: checked
+                                      ? p.students.filter((id) => id !== s.id)
+                                      : [...p.students, s.id],
+                                  }))
+                                }}
+                                className="accent-blue-500 h-4 w-4 flex-shrink-0"
+                              />
+                              <span className="flex-1 text-sm text-white">{s.fullName}</span>
+                              <span className="text-xs text-slate-500">{s.studentID}</span>
+                            </label>
+                          )
+                        })}
+                    </div>
+                  )}
                 </div>
 
                 <Button type="submit" className="mt-1">
@@ -520,7 +580,7 @@ export default function AdminModelsPage() {
                         start_date: c.start_date.slice(0, 10),
                         end_date: c.end_date.slice(0, 10),
                         scheduleRows: rows,
-                        students: c.students.join(", "),
+                        students: c.students,
                       })
                     }}
                   >

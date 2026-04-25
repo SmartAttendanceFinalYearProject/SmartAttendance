@@ -241,7 +241,7 @@ export default function AdminModelsPage() {
       {/* ══════════════ SUBJECTS TAB ══════════════ */}
       {activeTab === "subjects" && (
         <div className="space-y-4">
-          <Card className="bg-card/40 border-white/5">
+          <Card className="bg-card/40 border-0">
             <CardHeader className="pb-2"><CardTitle className="text-center">Subject Form</CardTitle></CardHeader>
             <CardContent className="px-4 pb-4 pt-0">
               <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitSubject}>
@@ -290,7 +290,7 @@ export default function AdminModelsPage() {
       {/* ══════════════ TEACHERS TAB ══════════════ */}
       {activeTab === "teachers" && (
         <div className="space-y-4">
-          <Card className="bg-card/40 border-white/5">
+          <Card className="bg-card/40 border-0">
             <CardHeader className="pb-2"><CardTitle className="text-center">Teacher Form</CardTitle></CardHeader>
             <CardContent className="px-4 pb-4 pt-0">
               <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitTeacher}>
@@ -356,7 +356,7 @@ export default function AdminModelsPage() {
       {/* ══════════════ CLASSES TAB ══════════════ */}
       {activeTab === "classes" && (
         <div className="space-y-4">
-          <Card className="bg-card/40 border-white/5">
+          <Card className="bg-card/40 border-0">
             <CardHeader className="pb-2"><CardTitle className="text-center">Class Form</CardTitle></CardHeader>
             <CardContent className="px-4 pb-4 pt-0">
               <form className="flex flex-col gap-4 max-w-lg mx-auto" onSubmit={submitClass}>

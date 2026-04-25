@@ -2,16 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BookOpen, GraduationCap, Layers3, Trash2, Pencil } from "lucide-react"
+import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus } from "lucide-react"
 
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
+type Student = { id: string; fullName: string; studentID: string }
 type DaySchedule = { day: string; start_time: string; end_time: string }
 type ClassItem = {
   id: string
@@ -27,6 +27,9 @@ type ClassItem = {
 }
 
 const API = "http://localhost:8000"
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+const emptyScheduleRow = (): DaySchedule => ({ day: "Monday", start_time: "10:00 AM", end_time: "11:00 AM" })
 
 const emptyClassForm = {
   class_name: "",
@@ -34,16 +37,19 @@ const emptyClassForm = {
   teacher_id: "",
   start_date: "",
   end_date: "",
-  day: "Monday",
-  start_time: "10:00 AM",
-  end_time: "11:00 AM",
-  students: "",
+  scheduleRows: [emptyScheduleRow()],
+  students: [] as string[],
 }
 
+type Tab = "subjects" | "teachers" | "classes"
+
 export default function AdminModelsPage() {
+  const [activeTab, setActiveTab] = useState<Tab>("subjects")
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [classes, setClasses] = useState<ClassItem[]>([])
+  const [students, setStudents] = useState<Student[]>([])
+  const [studentSearch, setStudentSearch] = useState("")
   const [loading, setLoading] = useState(true)
 
   const [subjectForm, setSubjectForm] = useState({ subject_name: "", subject_code: "" })
@@ -62,25 +68,33 @@ export default function AdminModelsPage() {
 
   const fetchAll = async () => {
     try {
-      const [subjectRes, teacherRes, classRes] = await Promise.all([
+      const [subjectRes, teacherRes, classRes, studentRes] = await Promise.all([
         fetch(`${API}/subjects`, { headers: authHeader }),
         fetch(`${API}/admin/teachers`, { headers: authHeader }),
         fetch(`${API}/classes`, { headers: authHeader }),
+        fetch(`${API}/admin/students`, { headers: authHeader }),
       ])
 
-      if (!subjectRes.ok) throw new Error("Failed to load subjects")
-      if (!teacherRes.ok) throw new Error("Failed to load teachers")
-      if (!classRes.ok) throw new Error("Failed to load classes")
+      // Each resource is independent — one failure won't block the others
+      if (subjectRes.ok) setSubjects(await subjectRes.json())
+      else toast.error("Could not load subjects")
 
-      setSubjects(await subjectRes.json())
-      setTeachers(await teacherRes.json())
-      setClasses(await classRes.json())
+      if (teacherRes.ok) setTeachers(await teacherRes.json())
+      else toast.error("Could not load teachers")
+
+      if (studentRes.ok) setStudents(await studentRes.json())
+      else toast.error("Could not load student list")
+
+      if (classRes.ok) setClasses(await classRes.json())
+      else toast.error("Could not load classes — check backend logs")
+
     } catch (error: any) {
-      toast.error(error.message || "Could not load data")
+      toast.error(error.message || "Network error — could not reach backend")
     } finally {
       setLoading(false)
     }
   }
+
 
   useEffect(() => {
     fetchAll()
@@ -148,12 +162,9 @@ export default function AdminModelsPage() {
         start_date: new Date(classForm.start_date).toISOString(),
         end_date: new Date(classForm.end_date).toISOString(),
         schedule: {
-          schedule: [{ day: classForm.day, start_time: classForm.start_time, end_time: classForm.end_time }],
+          schedule: classForm.scheduleRows,
         },
-        students: classForm.students
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean),
+        students: classForm.students,
       }
 
       const res = await fetch(endpoint, {
@@ -182,33 +193,91 @@ export default function AdminModelsPage() {
     }
   }
 
+  // Schedule row helpers
+  const updateScheduleRow = (index: number, field: keyof DaySchedule, value: string) => {
+    setClassForm((prev) => {
+      const rows = prev.scheduleRows.map((r, i) => (i === index ? { ...r, [field]: value } : r))
+      return { ...prev, scheduleRows: rows }
+    })
+  }
+
+  const addScheduleRow = () => {
+    setClassForm((prev) => ({ ...prev, scheduleRows: [...prev.scheduleRows, emptyScheduleRow()] }))
+  }
+
+  const removeScheduleRow = (index: number) => {
+    setClassForm((prev) => ({ ...prev, scheduleRows: prev.scheduleRows.filter((_, i) => i !== index) }))
+  }
+
   if (loading) {
     return <div className="container mx-auto px-4 py-8 text-slate-300">Loading admin data...</div>
   }
+
+  const tabs: { value: Tab; label: string; icon: React.ReactNode }[] = [
+    { value: "subjects", label: "Subjects", icon: <BookOpen size={15} /> },
+    { value: "teachers", label: "Teachers", icon: <GraduationCap size={15} /> },
+    { value: "classes", label: "Classes", icon: <Layers3 size={15} /> },
+  ]
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
       <h1 className="text-3xl font-bold text-white mb-2">Manage Academic Models</h1>
       <p className="text-sm text-slate-400 mb-6">Create, update, and delete Subjects, Teachers, and Classes from one page.</p>
 
-      <Tabs defaultValue="subjects">
-        <TabsList className="grid grid-cols-3 mb-6 h-12 bg-white/5 border border-white/5 rounded-2xl p-1">
-          <TabsTrigger value="subjects" className="rounded-xl"><BookOpen size={14} className="mr-2" />Subjects</TabsTrigger>
-          <TabsTrigger value="teachers" className="rounded-xl"><GraduationCap size={14} className="mr-2" />Teachers</TabsTrigger>
-          <TabsTrigger value="classes" className="rounded-xl"><Layers3 size={14} className="mr-2" />Classes</TabsTrigger>
-        </TabsList>
+      {/* ── Custom Tab Bar ── */}
+      <div className="flex gap-1 mb-6 p-1 rounded-2xl bg-white/5 border border-white/5 w-full">
+        {tabs.map((t) => {
+          const isActive = activeTab === t.value
+          return (
+            <button
+              key={t.value}
+              onClick={() => setActiveTab(t.value)}
+              className={`
+                flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer
+                ${isActive
+                  ? "bg-[#0f1e40] text-blue-300 shadow-lg shadow-blue-950/60 border border-blue-900/50"
+                  : "text-slate-400 hover:text-white hover:bg-white/10"}
+              `}
+            >
+              {t.icon}
+              {t.label}
+            </button>
+          )
+        })}
+      </div>
 
-        <TabsContent value="subjects" className="space-y-4">
-          <Card className="bg-card/40 border-white/5">
-            <CardHeader><CardTitle>Subject Form</CardTitle></CardHeader>
-            <CardContent>
-              <form className="grid md:grid-cols-3 gap-3" onSubmit={submitSubject}>
-                <Input placeholder="Subject Name" value={subjectForm.subject_name} onChange={(e) => setSubjectForm((p) => ({ ...p, subject_name: e.target.value }))} required />
-                <Input placeholder="Subject Code" value={subjectForm.subject_code} onChange={(e) => setSubjectForm((p) => ({ ...p, subject_code: e.target.value }))} required />
-                <Button type="submit">{editingSubjectId ? "Update Subject" : "Create Subject"}</Button>
+      {/* ══════════════ SUBJECTS TAB ══════════════ */}
+      {activeTab === "subjects" && (
+        <div className="space-y-4">
+          <Card className="bg-card/40 border-0">
+            <CardHeader className="pb-2"><CardTitle className="text-center">Subject Form</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
+              <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitSubject}>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Subject Name</Label>
+                  <Input
+                    placeholder="e.g. Mathematics"
+                    value={subjectForm.subject_name}
+                    onChange={(e) => setSubjectForm((p) => ({ ...p, subject_name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Subject Code</Label>
+                  <Input
+                    placeholder="e.g. MATH101"
+                    value={subjectForm.subject_code}
+                    onChange={(e) => setSubjectForm((p) => ({ ...p, subject_code: e.target.value }))}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="mt-1">
+                  {editingSubjectId ? "Update Subject" : "Create Subject"}
+                </Button>
               </form>
             </CardContent>
           </Card>
+
           {subjects.map((s) => (
             <Card key={s.id} className="bg-card/30 border-white/5">
               <CardContent className="py-4 flex items-center justify-between">
@@ -223,24 +292,58 @@ export default function AdminModelsPage() {
               </CardContent>
             </Card>
           ))}
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="teachers" className="space-y-4">
-          <Card className="bg-card/40 border-white/5">
-            <CardHeader><CardTitle>Teacher Form</CardTitle></CardHeader>
-            <CardContent>
-              <form className="grid md:grid-cols-2 gap-3" onSubmit={submitTeacher}>
-                <Input placeholder="Full Name" value={teacherForm.full_name} onChange={(e) => setTeacherForm((p) => ({ ...p, full_name: e.target.value }))} required />
-                <Input placeholder="Username" value={teacherForm.username} onChange={(e) => setTeacherForm((p) => ({ ...p, username: e.target.value }))} required />
-                <Select value={teacherForm.subject_id} onValueChange={(v) => setTeacherForm((p) => ({ ...p, subject_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                  <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
-                </Select>
-                <Input placeholder={editingTeacherId ? "New Password (optional)" : "Password"} type="password" value={teacherForm.password} onChange={(e) => setTeacherForm((p) => ({ ...p, password: e.target.value }))} required={!editingTeacherId} />
-                <Button type="submit" className="md:col-span-2">{editingTeacherId ? "Update Teacher" : "Create Teacher"}</Button>
+      {/* ══════════════ TEACHERS TAB ══════════════ */}
+      {activeTab === "teachers" && (
+        <div className="space-y-4">
+          <Card className="bg-card/40 border-0">
+            <CardHeader className="pb-2"><CardTitle className="text-center">Teacher Form</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
+              <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitTeacher}>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Full Name</Label>
+                  <Input
+                    placeholder="e.g. Dr. Abebe Girma"
+                    value={teacherForm.full_name}
+                    onChange={(e) => setTeacherForm((p) => ({ ...p, full_name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Username</Label>
+                  <Input
+                    placeholder="e.g. teacher01"
+                    value={teacherForm.username}
+                    onChange={(e) => setTeacherForm((p) => ({ ...p, username: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Subject</Label>
+                  <Select value={teacherForm.subject_id} onValueChange={(v) => setTeacherForm((p) => ({ ...p, subject_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                    <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">{editingTeacherId ? "New Password (optional)" : "Password"}</Label>
+                  <Input
+                    placeholder={editingTeacherId ? "Leave blank to keep current" : "Password"}
+                    type="password"
+                    value={teacherForm.password}
+                    onChange={(e) => setTeacherForm((p) => ({ ...p, password: e.target.value }))}
+                    required={!editingTeacherId}
+                  />
+                </div>
+                <Button type="submit" className="mt-1">
+                  {editingTeacherId ? "Update Teacher" : "Create Teacher"}
+                </Button>
               </form>
             </CardContent>
           </Card>
+
           {teachers.map((t) => (
             <Card key={t.id} className="bg-card/30 border-white/5">
               <CardContent className="py-4 flex items-center justify-between">
@@ -255,43 +358,205 @@ export default function AdminModelsPage() {
               </CardContent>
             </Card>
           ))}
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="classes" className="space-y-4">
-          <Card className="bg-card/40 border-white/5">
-            <CardHeader><CardTitle>Class Form</CardTitle></CardHeader>
-            <CardContent>
-              <form className="grid md:grid-cols-2 gap-3" onSubmit={submitClass}>
-                <Input placeholder="Class Name" value={classForm.class_name} onChange={(e) => setClassForm((p) => ({ ...p, class_name: e.target.value }))} required />
-                <Select value={classForm.subject_id} onValueChange={(v) => setClassForm((p) => ({ ...p, subject_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                  <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={classForm.teacher_id} onValueChange={(v) => setClassForm((p) => ({ ...p, teacher_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select Teacher" /></SelectTrigger>
-                  <SelectContent>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
-                </Select>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs mb-1 block">Start Date</Label>
-                    <Input type="datetime-local" value={classForm.start_date} onChange={(e) => setClassForm((p) => ({ ...p, start_date: e.target.value }))} required />
+      {/* ══════════════ CLASSES TAB ══════════════ */}
+      {activeTab === "classes" && (
+        <div className="space-y-4">
+          <Card className="bg-card/40 border-0">
+            <CardHeader className="pb-2"><CardTitle className="text-center">Class Form</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
+              <form className="flex flex-col gap-4 max-w-lg mx-auto" onSubmit={submitClass}>
+
+                {/* Class Name */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Class Name</Label>
+                  <Input
+                    placeholder="e.g. Year 2 Section A"
+                    value={classForm.class_name}
+                    onChange={(e) => setClassForm((p) => ({ ...p, class_name: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                {/* Select Subject */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Subject</Label>
+                  <Select value={classForm.subject_id} onValueChange={(v) => setClassForm((p) => ({ ...p, subject_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                    <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+
+                {/* Select Teacher */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-400">Teacher</Label>
+                  <Select value={classForm.teacher_id} onValueChange={(v) => setClassForm((p) => ({ ...p, teacher_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select Teacher" /></SelectTrigger>
+                    <SelectContent>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+
+                {/* Start & End Date — horizontal, calendar picker */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">Start Date</Label>
+                    <Input
+                      type="date"
+                      value={classForm.start_date}
+                      onChange={(e) => setClassForm((p) => ({ ...p, start_date: e.target.value }))}
+                      required
+                      className="cursor-pointer [color-scheme:dark] bg-[#0d1b2e]/70 border-blue-900/40 text-blue-100 backdrop-blur-sm"
+                    />
                   </div>
-                  <div>
-                    <Label className="text-xs mb-1 block">End Date</Label>
-                    <Input type="datetime-local" value={classForm.end_date} onChange={(e) => setClassForm((p) => ({ ...p, end_date: e.target.value }))} required />
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">End Date</Label>
+                    <Input
+                      type="date"
+                      value={classForm.end_date}
+                      onChange={(e) => setClassForm((p) => ({ ...p, end_date: e.target.value }))}
+                      required
+                      className="cursor-pointer [color-scheme:dark] bg-[#0d1b2e]/70 border-blue-900/40 text-blue-100 backdrop-blur-sm"
+                    />
                   </div>
                 </div>
-                <Select value={classForm.day} onValueChange={(v) => setClassForm((p) => ({ ...p, day: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                </Select>
-                <Input placeholder="Start Time (e.g. 10:00 AM)" value={classForm.start_time} onChange={(e) => setClassForm((p) => ({ ...p, start_time: e.target.value }))} required />
-                <Input placeholder="End Time (e.g. 11:30 AM)" value={classForm.end_time} onChange={(e) => setClassForm((p) => ({ ...p, end_time: e.target.value }))} required />
-                <Input className="md:col-span-2" placeholder="Student IDs (comma separated)" value={classForm.students} onChange={(e) => setClassForm((p) => ({ ...p, students: e.target.value }))} />
-                <Button type="submit" className="md:col-span-2">{editingClassId ? "Update Class" : "Create Class"}</Button>
+
+                {/* Schedule Rows */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Weekly Schedule</Label>
+
+                  {classForm.scheduleRows.map((row, idx) => (
+                    <div key={idx} className="flex items-center gap-2 flex-wrap">
+                      {/* Day selector */}
+                      <Select value={row.day} onValueChange={(v) => updateScheduleRow(idx, "day", v)}>
+                        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Start time */}
+                      <div className="flex-1 space-y-0.5 min-w-[110px]">
+                        <Input
+                          type="time"
+                          value={row.start_time}
+                          onChange={(e) => updateScheduleRow(idx, "start_time", e.target.value)}
+                          required
+                          className="cursor-pointer"
+                        />
+                      </div>
+
+                      <span className="text-slate-500 text-sm">–</span>
+
+                      {/* End time */}
+                      <div className="flex-1 space-y-0.5 min-w-[110px]">
+                        <Input
+                          type="time"
+                          value={row.end_time}
+                          onChange={(e) => updateScheduleRow(idx, "end_time", e.target.value)}
+                          required
+                          className="cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Remove row button (only if more than 1) */}
+                      {classForm.scheduleRows.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8 flex-shrink-0"
+                          onClick={() => removeScheduleRow(idx)}
+                        >
+                          <Trash2 size={13} />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* + Add another day button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 gap-1.5 border-dashed border-white/20 text-slate-400 hover:text-white"
+                    onClick={addScheduleRow}
+                  >
+                    <Plus size={14} />
+                    Add Another Day
+                  </Button>
+                </div>
+
+                {/* Students multi-select */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                    Students
+                    {classForm.students.length > 0 && (
+                      <span className="ml-2 text-blue-400 normal-case font-normal">
+                        {classForm.students.length} selected
+                      </span>
+                    )}
+                  </Label>
+
+                  {/* Search */}
+                  <Input
+                    placeholder="Search students by name or ID…"
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="bg-slate-900/60 border-white/10 text-white placeholder:text-slate-500"
+                  />
+
+                  {students.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic py-2">
+                      No registered students found.
+                    </p>
+                  ) : (
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10 bg-slate-900/40 divide-y divide-white/5">
+                      {students
+                        .filter((s) =>
+                          !studentSearch ||
+                          s.fullName.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                          s.studentID.toLowerCase().includes(studentSearch.toLowerCase())
+                        )
+                        .map((s) => {
+                          const checked = classForm.students.includes(s.id)
+                          return (
+                            <label
+                              key={s.id}
+                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                                checked ? "bg-blue-900/30" : "hover:bg-white/5"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  setClassForm((p) => ({
+                                    ...p,
+                                    students: checked
+                                      ? p.students.filter((id) => id !== s.id)
+                                      : [...p.students, s.id],
+                                  }))
+                                }}
+                                className="accent-blue-500 h-4 w-4 flex-shrink-0"
+                              />
+                              <span className="flex-1 text-sm text-white">{s.fullName}</span>
+                              <span className="text-xs text-slate-500">{s.studentID}</span>
+                            </label>
+                          )
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                <Button type="submit" className="mt-1">
+                  {editingClassId ? "Update Class" : "Create Class"}
+                </Button>
               </form>
             </CardContent>
           </Card>
+
           {classes.map((c) => (
             <Card key={c.id} className="bg-card/30 border-white/5">
               <CardContent className="py-4 flex items-center justify-between">
@@ -304,18 +569,18 @@ export default function AdminModelsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const first = c.schedule?.schedule?.[0]
+                      const rows = c.schedule?.schedule?.length
+                        ? c.schedule.schedule
+                        : [emptyScheduleRow()]
                       setEditingClassId(c.id)
                       setClassForm({
                         class_name: c.class_name,
                         subject_id: c.subject_id,
                         teacher_id: c.teacher_id,
-                        start_date: c.start_date.slice(0, 16),
-                        end_date: c.end_date.slice(0, 16),
-                        day: first?.day || "Monday",
-                        start_time: first?.start_time || "10:00 AM",
-                        end_time: first?.end_time || "11:00 AM",
-                        students: c.students.join(", "),
+                        start_date: c.start_date.slice(0, 10),
+                        end_date: c.end_date.slice(0, 10),
+                        scheduleRows: rows,
+                        students: c.students,
                       })
                     }}
                   >
@@ -326,8 +591,8 @@ export default function AdminModelsPage() {
               </CardContent>
             </Card>
           ))}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   )
 }

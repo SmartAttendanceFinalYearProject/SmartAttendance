@@ -53,15 +53,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`scrollbar-thin ${archivGrotesk.variable}`}>
-      <body className={`${archivGrotesk.className} min-h-screen antialiased bg-background relative`}>
+      <body className={`${archivGrotesk.className} min-h-screen flex flex-col antialiased bg-background relative`}>
         <Background />
         <Navbar />
-        <main className="animate-fade-in-up relative z-10">
+        <main className="animate-fade-in-up relative z-10 flex-grow">
           {children}
           <Toaster position="bottom-right" richColors  closeButton={true}/>
         </main>
         
-        <footer className="border-t border-white/5 py-8 bg-black/20 backdrop-blur-sm relative z-10">
+        <footer className="border-t border-white/5 py-6 bg-black/20 backdrop-blur-sm relative z-10 mt-auto">
           <div className="container mx-auto px-4 text-center">
             <p className="text-sm font-medium text-slate-400">
               © {new Date().getFullYear()} SMART Attendance System.

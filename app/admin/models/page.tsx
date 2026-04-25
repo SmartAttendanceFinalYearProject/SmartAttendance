@@ -242,8 +242,8 @@ export default function AdminModelsPage() {
       {activeTab === "subjects" && (
         <div className="space-y-4">
           <Card className="bg-card/40 border-white/5">
-            <CardHeader><CardTitle>Subject Form</CardTitle></CardHeader>
-            <CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-center">Subject Form</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
               <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitSubject}>
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-400">Subject Name</Label>
@@ -291,8 +291,8 @@ export default function AdminModelsPage() {
       {activeTab === "teachers" && (
         <div className="space-y-4">
           <Card className="bg-card/40 border-white/5">
-            <CardHeader><CardTitle>Teacher Form</CardTitle></CardHeader>
-            <CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-center">Teacher Form</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
               <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitTeacher}>
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-400">Full Name</Label>
@@ -357,8 +357,8 @@ export default function AdminModelsPage() {
       {activeTab === "classes" && (
         <div className="space-y-4">
           <Card className="bg-card/40 border-white/5">
-            <CardHeader><CardTitle>Class Form</CardTitle></CardHeader>
-            <CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-center">Class Form</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
               <form className="flex flex-col gap-4 max-w-lg mx-auto" onSubmit={submitClass}>
 
                 {/* Class Name */}
@@ -399,7 +399,7 @@ export default function AdminModelsPage() {
                       value={classForm.start_date}
                       onChange={(e) => setClassForm((p) => ({ ...p, start_date: e.target.value }))}
                       required
-                      className="cursor-pointer [color-scheme:dark] bg-slate-900/80 border-white/10 text-white"
+                      className="cursor-pointer [color-scheme:dark] bg-[#0d1b2e]/70 border-blue-900/40 text-blue-100 backdrop-blur-sm"
                     />
                   </div>
                   <div className="space-y-1">
@@ -409,7 +409,7 @@ export default function AdminModelsPage() {
                       value={classForm.end_date}
                       onChange={(e) => setClassForm((p) => ({ ...p, end_date: e.target.value }))}
                       required
-                      className="cursor-pointer [color-scheme:dark] bg-slate-900/80 border-white/10 text-white"
+                      className="cursor-pointer [color-scheme:dark] bg-[#0d1b2e]/70 border-blue-900/40 text-blue-100 backdrop-blur-sm"
                     />
                   </div>
                 </div>

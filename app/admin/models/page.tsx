@@ -175,6 +175,14 @@ export default function AdminModelsPage() {
       return
     }
 
+    // Check for identical start/end times in schedule
+    for (const row of classForm.scheduleRows) {
+      if (row.start_time === row.end_time) {
+        toast.error(`Session time cannot be the same for ${row.day} (${row.start_time})`)
+        return
+      }
+    }
+
     setIsSubmittingClass(true)
     try {
       const endpoint = editingClassId ? `${API}/admin/classes/${editingClassId}` : `${API}/admin/classes`

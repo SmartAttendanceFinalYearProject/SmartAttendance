@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X } from "lucide-react"
+import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff } from "lucide-react"
 
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
@@ -55,12 +55,16 @@ export default function AdminModelsPage() {
 
   const [subjectForm, setSubjectForm] = useState({ subject_name: "", subject_code: "" })
   const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null)
+  const [isSubmittingSubject, setIsSubmittingSubject] = useState(false)
 
   const [teacherForm, setTeacherForm] = useState({ full_name: "", subject_id: "", username: "", password: "" })
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null)
+  const [isSubmittingTeacher, setIsSubmittingTeacher] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const [classForm, setClassForm] = useState(emptyClassForm)
   const [editingClassId, setEditingClassId] = useState<string | null>(null)
+  const [isSubmittingClass, setIsSubmittingClass] = useState(false)
 
   const authHeader = useMemo(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
@@ -103,6 +107,7 @@ export default function AdminModelsPage() {
 
   const submitSubject = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmittingSubject(true)
     try {
       const endpoint = editingSubjectId ? `${API}/admin/subjects/${editingSubjectId}` : `${API}/admin/subjects`
       const method = editingSubjectId ? "PUT" : "POST"
@@ -119,11 +124,14 @@ export default function AdminModelsPage() {
       await fetchAll()
     } catch (error: any) {
       toast.error(error.message || "Subject save failed")
+    } finally {
+      setIsSubmittingSubject(false)
     }
   }
 
   const submitTeacher = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmittingTeacher(true)
     try {
       const endpoint = editingTeacherId ? `${API}/admin/teachers/${editingTeacherId}` : `${API}/admin/create-teacher`
       const method = editingTeacherId ? "PUT" : "POST"
@@ -149,11 +157,20 @@ export default function AdminModelsPage() {
       await fetchAll()
     } catch (error: any) {
       toast.error(error.message || "Teacher save failed")
+    } finally {
+      setIsSubmittingTeacher(false)
     }
   }
 
   const submitClass = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (classForm.start_date === classForm.end_date) {
+      toast.error("Start date and end date cannot be the same")
+      return
+    }
+
+    setIsSubmittingClass(true)
     try {
       const endpoint = editingClassId ? `${API}/admin/classes/${editingClassId}` : `${API}/admin/classes`
       const method = editingClassId ? "PUT" : "POST"
@@ -183,6 +200,8 @@ export default function AdminModelsPage() {
       await fetchAll()
     } catch (error: any) {
       toast.error(error.message || "Class save failed")
+    } finally {
+      setIsSubmittingClass(false)
     }
   }
 
@@ -310,9 +329,11 @@ export default function AdminModelsPage() {
                       required
                     />
                   </div>
-                  <Button type="submit" className="mt-1">
-                    {editingSubjectId ? "Update Subject" : "Create Subject"}
-                  </Button>
+                  <Button type="submit" className="mt-1" disabled={isSubmittingSubject}>
+                  {isSubmittingSubject ? (
+                    <><div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
+                  ) : editingSubjectId ? "Update Subject" : "Create Subject"}
+                </Button>
                 </form>
               </CardContent>
             </Card>
@@ -347,7 +368,7 @@ export default function AdminModelsPage() {
             <Card className="bg-card/40 border-0 relative">
               <CardHeader className="pb-2">
                 <CardTitle className="text-center">Teacher Form</CardTitle>
-                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingTeacherId(null); setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" }); }}>
+                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingTeacherId(null); setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" }); setShowPassword(false); }}>
                   <X size={16} />
                 </Button>
               </CardHeader>
@@ -380,16 +401,28 @@ export default function AdminModelsPage() {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs text-slate-400">{editingTeacherId ? "New Password (optional)" : "Password"}</Label>
-                    <Input
-                      placeholder={editingTeacherId ? "Leave blank to keep current" : "Password"}
-                      type="password"
-                      value={teacherForm.password}
-                      onChange={(e) => setTeacherForm((p) => ({ ...p, password: e.target.value }))}
-                      required={!editingTeacherId}
-                    />
+                    <div className="relative">
+                      <Input
+                        placeholder={editingTeacherId ? "Leave blank to keep current" : "Password"}
+                        type={showPassword ? "text" : "password"}
+                        value={teacherForm.password}
+                        onChange={(e) => setTeacherForm((p) => ({ ...p, password: e.target.value }))}
+                        required={!editingTeacherId}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <Button type="submit" className="mt-1">
-                    {editingTeacherId ? "Update Teacher" : "Create Teacher"}
+                  <Button type="submit" className="mt-1" disabled={isSubmittingTeacher}>
+                    {isSubmittingTeacher ? (
+                      <><div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
+                    ) : editingTeacherId ? "Update Teacher" : "Create Teacher"}
                   </Button>
                 </form>
               </CardContent>
@@ -407,7 +440,7 @@ export default function AdminModelsPage() {
                       <p className="text-xs text-slate-400">{t.username}</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); }}><Pencil size={14} /></Button>
+                      <Button variant="outline" size="sm" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); setShowPassword(false); }}><Pencil size={14} /></Button>
                       <Button variant="destructive" size="sm" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
                     </div>
                   </CardContent>
@@ -613,8 +646,10 @@ export default function AdminModelsPage() {
                   )}
                 </div>
 
-                <Button type="submit" className="mt-1">
-                  {editingClassId ? "Update Class" : "Create Class"}
+                <Button type="submit" className="mt-1" disabled={isSubmittingClass}>
+                  {isSubmittingClass ? (
+                    <><div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
+                  ) : editingClassId ? "Update Class" : "Create Class"}
                 </Button>
               </form>
             </CardContent>

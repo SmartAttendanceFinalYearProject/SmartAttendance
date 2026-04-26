@@ -214,7 +214,36 @@ export default function AdminModelsPage() {
   }
 
   if (loading) {
-    return <div className="container mx-auto px-4 py-8 text-slate-300">Loading admin data...</div>
+    return (
+      <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl animate-pulse">
+        {/* Header Skeleton */}
+        <div className="h-9 w-72 bg-white/10 rounded-lg mb-3"></div>
+        <div className="h-4 w-96 bg-white/5 rounded-md mb-6"></div>
+
+        {/* Tab Bar Skeleton */}
+        <div className="flex gap-1 mb-6 p-1 rounded-2xl bg-white/5 border border-white/5 w-full h-[52px]"></div>
+
+        {/* List Content Skeleton */}
+        <div className="space-y-4 max-w-2xl mx-auto">
+          <div className="flex justify-end mb-2">
+            <div className="h-9 w-32 bg-white/10 rounded-md"></div>
+          </div>
+          
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white/5 border border-white/5 rounded-xl p-4 flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-5 w-48 bg-white/10 rounded-md"></div>
+                <div className="h-3 w-32 bg-white/5 rounded-md"></div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-8 w-8 bg-white/10 rounded-md"></div>
+                <div className="h-8 w-8 bg-white/10 rounded-md"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   const tabs: { value: Tab; label: string; icon: React.ReactNode }[] = [
@@ -252,12 +281,12 @@ export default function AdminModelsPage() {
 
       {/* ══════════════ SUBJECTS TAB ══════════════ */}
       {activeTab === "subjects" && (
-        <div className="space-y-4 max-w-3xl mx-auto">
+        <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            <Card className="bg-card/40 border-0">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle>Subject Form</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingSubjectId(null); setSubjectForm({ subject_name: "", subject_code: "" }); }}>
+            <Card className="bg-card/40 border-0 relative">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-center">Subject Form</CardTitle>
+                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingSubjectId(null); setSubjectForm({ subject_name: "", subject_code: "" }); }}>
                   <X size={16} />
                 </Button>
               </CardHeader>
@@ -313,12 +342,12 @@ export default function AdminModelsPage() {
 
       {/* ══════════════ TEACHERS TAB ══════════════ */}
       {activeTab === "teachers" && (
-        <div className="space-y-4 max-w-3xl mx-auto">
+        <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            <Card className="bg-card/40 border-0">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle>Teacher Form</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingTeacherId(null); setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" }); }}>
+            <Card className="bg-card/40 border-0 relative">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-center">Teacher Form</CardTitle>
+                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingTeacherId(null); setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" }); }}>
                   <X size={16} />
                 </Button>
               </CardHeader>
@@ -391,12 +420,12 @@ export default function AdminModelsPage() {
 
       {/* ══════════════ CLASSES TAB ══════════════ */}
       {activeTab === "classes" && (
-        <div className="space-y-4 max-w-3xl mx-auto">
+        <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            <Card className="bg-card/40 border-0">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle>Class Form</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingClassId(null); setClassForm(emptyClassForm); }}>
+            <Card className="bg-card/40 border-0 relative">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-center">Class Form</CardTitle>
+                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingClassId(null); setClassForm(emptyClassForm); }}>
                   <X size={16} />
                 </Button>
               </CardHeader>

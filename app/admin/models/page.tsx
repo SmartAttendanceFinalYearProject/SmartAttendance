@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus } from "lucide-react"
+import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X } from "lucide-react"
 
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
@@ -45,6 +45,7 @@ type Tab = "subjects" | "teachers" | "classes"
 
 export default function AdminModelsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("subjects")
+  const [showForm, setShowForm] = useState(false)
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [classes, setClasses] = useState<ClassItem[]>([])
@@ -114,6 +115,7 @@ export default function AdminModelsPage() {
       toast.success(editingSubjectId ? "Subject updated" : "Subject created")
       setSubjectForm({ subject_name: "", subject_code: "" })
       setEditingSubjectId(null)
+      setShowForm(false)
       await fetchAll()
     } catch (error: any) {
       toast.error(error.message || "Subject save failed")
@@ -143,6 +145,7 @@ export default function AdminModelsPage() {
       toast.success(editingTeacherId ? "Teacher updated" : "Teacher created")
       setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" })
       setEditingTeacherId(null)
+      setShowForm(false)
       await fetchAll()
     } catch (error: any) {
       toast.error(error.message || "Teacher save failed")
@@ -176,6 +179,7 @@ export default function AdminModelsPage() {
       toast.success(editingClassId ? "Class updated" : "Class created")
       setClassForm(emptyClassForm)
       setEditingClassId(null)
+      setShowForm(false)
       await fetchAll()
     } catch (error: any) {
       toast.error(error.message || "Class save failed")
@@ -231,7 +235,7 @@ export default function AdminModelsPage() {
           return (
             <button
               key={t.value}
-              onClick={() => setActiveTab(t.value)}
+              onClick={() => { setActiveTab(t.value); setShowForm(false); }}
               className={`
                 flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer
                 ${isActive
@@ -248,128 +252,158 @@ export default function AdminModelsPage() {
 
       {/* ══════════════ SUBJECTS TAB ══════════════ */}
       {activeTab === "subjects" && (
-        <div className="space-y-4">
-          <Card className="bg-card/40 border-0">
-            <CardHeader className="pb-2"><CardTitle className="text-center">Subject Form</CardTitle></CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
-              <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitSubject}>
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Subject Name</Label>
-                  <Input
-                    placeholder="e.g. Mathematics"
-                    value={subjectForm.subject_name}
-                    onChange={(e) => setSubjectForm((p) => ({ ...p, subject_name: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Subject Code</Label>
-                  <Input
-                    placeholder="e.g. MATH101"
-                    value={subjectForm.subject_code}
-                    onChange={(e) => setSubjectForm((p) => ({ ...p, subject_code: e.target.value }))}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="mt-1">
-                  {editingSubjectId ? "Update Subject" : "Create Subject"}
+        <div className="space-y-4 max-w-3xl mx-auto">
+          {showForm ? (
+            <Card className="bg-card/40 border-0">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle>Subject Form</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingSubjectId(null); setSubjectForm({ subject_name: "", subject_code: "" }); }}>
+                  <X size={16} />
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {subjects.map((s) => (
-            <Card key={s.id} className="bg-card/30 border-white/5">
-              <CardContent className="py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-white font-semibold">{s.subject_name}</p>
-                  <p className="text-xs text-slate-400">{s.subject_code}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setEditingSubjectId(s.id); setSubjectForm({ subject_name: s.subject_name, subject_code: s.subject_code }) }}><Pencil size={14} /></Button>
-                  <Button variant="destructive" size="sm" onClick={() => removeItem("subjects", s.id)}><Trash2 size={14} /></Button>
-                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0">
+                <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitSubject}>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">Subject Name</Label>
+                    <Input
+                      placeholder="e.g. Mathematics"
+                      value={subjectForm.subject_name}
+                      onChange={(e) => setSubjectForm((p) => ({ ...p, subject_name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">Subject Code</Label>
+                    <Input
+                      placeholder="e.g. MATH101"
+                      value={subjectForm.subject_code}
+                      onChange={(e) => setSubjectForm((p) => ({ ...p, subject_code: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="mt-1">
+                    {editingSubjectId ? "Update Subject" : "Create Subject"}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            <>
+              <div className="flex justify-end mb-2">
+                <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Subject</Button>
+              </div>
+              {subjects.map((s) => (
+                <Card key={s.id} className="bg-card/30 border-white/5">
+                  <CardContent className="py-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-white font-semibold">{s.subject_name}</p>
+                      <p className="text-xs text-slate-400">{s.subject_code}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => { setEditingSubjectId(s.id); setSubjectForm({ subject_name: s.subject_name, subject_code: s.subject_code }); setShowForm(true); }}><Pencil size={14} /></Button>
+                      <Button variant="destructive" size="sm" onClick={() => removeItem("subjects", s.id)}><Trash2 size={14} /></Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          )}
         </div>
       )}
 
       {/* ══════════════ TEACHERS TAB ══════════════ */}
       {activeTab === "teachers" && (
-        <div className="space-y-4">
-          <Card className="bg-card/40 border-0">
-            <CardHeader className="pb-2"><CardTitle className="text-center">Teacher Form</CardTitle></CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
-              <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitTeacher}>
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Full Name</Label>
-                  <Input
-                    placeholder="e.g. Dr. Abebe Girma"
-                    value={teacherForm.full_name}
-                    onChange={(e) => setTeacherForm((p) => ({ ...p, full_name: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Username</Label>
-                  <Input
-                    placeholder="e.g. teacher01"
-                    value={teacherForm.username}
-                    onChange={(e) => setTeacherForm((p) => ({ ...p, username: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Subject</Label>
-                  <Select value={teacherForm.subject_id} onValueChange={(v) => setTeacherForm((p) => ({ ...p, subject_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                    <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">{editingTeacherId ? "New Password (optional)" : "Password"}</Label>
-                  <Input
-                    placeholder={editingTeacherId ? "Leave blank to keep current" : "Password"}
-                    type="password"
-                    value={teacherForm.password}
-                    onChange={(e) => setTeacherForm((p) => ({ ...p, password: e.target.value }))}
-                    required={!editingTeacherId}
-                  />
-                </div>
-                <Button type="submit" className="mt-1">
-                  {editingTeacherId ? "Update Teacher" : "Create Teacher"}
+        <div className="space-y-4 max-w-3xl mx-auto">
+          {showForm ? (
+            <Card className="bg-card/40 border-0">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle>Teacher Form</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingTeacherId(null); setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" }); }}>
+                  <X size={16} />
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {teachers.map((t) => (
-            <Card key={t.id} className="bg-card/30 border-white/5">
-              <CardContent className="py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-white font-semibold">{t.full_name}</p>
-                  <p className="text-xs text-slate-400">{t.username}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }) }}><Pencil size={14} /></Button>
-                  <Button variant="destructive" size="sm" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
-                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0">
+                <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitTeacher}>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">Full Name</Label>
+                    <Input
+                      placeholder="e.g. Dr. Abebe Girma"
+                      value={teacherForm.full_name}
+                      onChange={(e) => setTeacherForm((p) => ({ ...p, full_name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">Username</Label>
+                    <Input
+                      placeholder="e.g. teacher01"
+                      value={teacherForm.username}
+                      onChange={(e) => setTeacherForm((p) => ({ ...p, username: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">Subject</Label>
+                    <Select value={teacherForm.subject_id} onValueChange={(v) => setTeacherForm((p) => ({ ...p, subject_id: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                      <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-400">{editingTeacherId ? "New Password (optional)" : "Password"}</Label>
+                    <Input
+                      placeholder={editingTeacherId ? "Leave blank to keep current" : "Password"}
+                      type="password"
+                      value={teacherForm.password}
+                      onChange={(e) => setTeacherForm((p) => ({ ...p, password: e.target.value }))}
+                      required={!editingTeacherId}
+                    />
+                  </div>
+                  <Button type="submit" className="mt-1">
+                    {editingTeacherId ? "Update Teacher" : "Create Teacher"}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            <>
+              <div className="flex justify-end mb-2">
+                <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Teacher</Button>
+              </div>
+              {teachers.map((t) => (
+                <Card key={t.id} className="bg-card/30 border-white/5">
+                  <CardContent className="py-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-white font-semibold">{t.full_name}</p>
+                      <p className="text-xs text-slate-400">{t.username}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); }}><Pencil size={14} /></Button>
+                      <Button variant="destructive" size="sm" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          )}
         </div>
       )}
 
       {/* ══════════════ CLASSES TAB ══════════════ */}
       {activeTab === "classes" && (
-        <div className="space-y-4">
-          <Card className="bg-card/40 border-0">
-            <CardHeader className="pb-2"><CardTitle className="text-center">Class Form</CardTitle></CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
-              <form className="flex flex-col gap-4 max-w-lg mx-auto" onSubmit={submitClass}>
+        <div className="space-y-4 max-w-3xl mx-auto">
+          {showForm ? (
+            <Card className="bg-card/40 border-0">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle>Class Form</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingClassId(null); setClassForm(emptyClassForm); }}>
+                  <X size={16} />
+                </Button>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0">
+                <form className="flex flex-col gap-4 max-w-lg mx-auto" onSubmit={submitClass}>
 
-                {/* Class Name */}
+                  {/* Class Name */}
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-400">Class Name</Label>
                   <Input
@@ -556,41 +590,48 @@ export default function AdminModelsPage() {
               </form>
             </CardContent>
           </Card>
-
-          {classes.map((c) => (
-            <Card key={c.id} className="bg-card/30 border-white/5">
-              <CardContent className="py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-white font-semibold">{c.class_name}</p>
-                  <p className="text-xs text-slate-400">{c.teacher_name} • Students: {c.student_count}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const rows = c.schedule?.schedule?.length
-                        ? c.schedule.schedule
-                        : [emptyScheduleRow()]
-                      setEditingClassId(c.id)
-                      setClassForm({
-                        class_name: c.class_name,
-                        subject_id: c.subject_id,
-                        teacher_id: c.teacher_id,
-                        start_date: c.start_date.slice(0, 10),
-                        end_date: c.end_date.slice(0, 10),
-                        scheduleRows: rows,
-                        students: c.students,
-                      })
-                    }}
-                  >
-                    <Pencil size={14} />
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => removeItem("classes", c.id)}><Trash2 size={14} /></Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          ) : (
+            <>
+              <div className="flex justify-end mb-2">
+                <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Class</Button>
+              </div>
+              {classes.map((c) => (
+                <Card key={c.id} className="bg-card/30 border-white/5">
+                  <CardContent className="py-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-white font-semibold">{c.class_name}</p>
+                      <p className="text-xs text-slate-400">{c.teacher_name} • Students: {c.student_count}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const rows = c.schedule?.schedule?.length
+                            ? c.schedule.schedule
+                            : [emptyScheduleRow()]
+                          setEditingClassId(c.id)
+                          setClassForm({
+                            class_name: c.class_name,
+                            subject_id: c.subject_id,
+                            teacher_id: c.teacher_id,
+                            start_date: c.start_date.slice(0, 10),
+                            end_date: c.end_date.slice(0, 10),
+                            scheduleRows: rows,
+                            students: c.students,
+                          })
+                          setShowForm(true)
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => removeItem("classes", c.id)}><Trash2 size={14} /></Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>

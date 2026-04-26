@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"  
-import { User, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react"
+import { User, Lock, ArrowRight, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -88,7 +89,7 @@ export default function LoginPage() {
                 </div>
                 <Input
                   id="username"
-                  placeholder="admin"
+                  placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 h-11 bg-white/5 border-white/10 focus:border-blue-500/50 focus:ring-blue-500/20 transition-all rounded-xl"
@@ -106,13 +107,16 @@ export default function LoginPage() {
                 </div>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   placeholder="••••••••"
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-11 bg-white/5 border-white/10 focus:border-blue-500/50 focus:ring-blue-500/20 transition-all rounded-xl"
+                  className="pl-10 pr-10 h-11 bg-white/5 border-white/10 focus:border-blue-500/50 focus:ring-blue-500/20 transition-all rounded-xl"
                   required
                 />
+                <div className="absolute right-3 top-2.5 h-5 w-5 text-slate-500 cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </div>
               </div>
             </div>
           </CardContent>

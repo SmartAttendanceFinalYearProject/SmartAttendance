@@ -11,7 +11,7 @@ import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff 
 
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
-type Student = { id: string; fullName: string; studentID: string }
+type Student = { id: string; fullName: string; studentID: string; batch?: string; class_year?: string; semester?: string; section?: string; department?: string }
 type DaySchedule = { day: string; start_time: string; end_time: string }
 type ClassItem = {
   id: string
@@ -51,6 +51,11 @@ export default function AdminModelsPage() {
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [students, setStudents] = useState<Student[]>([])
   const [studentSearch, setStudentSearch] = useState("")
+  const [batchFilter, setBatchFilter] = useState("")
+  const [yearFilter, setYearFilter] = useState("")
+  const [semesterFilter, setSemesterFilter] = useState("")
+  const [sectionFilter, setSectionFilter] = useState("")
+  const [departmentFilter, setDepartmentFilter] = useState("")
   const [loading, setLoading] = useState(true)
 
   const [subjectForm, setSubjectForm] = useState({ subject_name: "", subject_code: "" })
@@ -585,66 +590,121 @@ export default function AdminModelsPage() {
                 </div>
 
                 {/* Students multi-select */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                    Students
-                    {classForm.students.length > 0 && (
-                      <span className="ml-2 text-blue-400 normal-case font-normal">
-                        {classForm.students.length} selected
-                      </span>
-                    )}
-                  </Label>
+                {/* Students multi-select */}
+                {(() => {
+                  const filteredStudents = students.filter((s) => {
+                    const matchesSearch = !studentSearch || s.fullName.toLowerCase().includes(studentSearch.toLowerCase()) || s.studentID.toLowerCase().includes(studentSearch.toLowerCase())
+                    const matchesBatch = !batchFilter || (s.batch && s.batch.toLowerCase().includes(batchFilter.toLowerCase()))
+                    const matchesYear = !yearFilter || (s.class_year && s.class_year.toLowerCase().includes(yearFilter.toLowerCase()))
+                    const matchesSem = !semesterFilter || (s.semester && s.semester.toLowerCase().includes(semesterFilter.toLowerCase()))
+                    const matchesSec = !sectionFilter || (s.section && s.section.toLowerCase().includes(sectionFilter.toLowerCase()))
+                    const matchesDept = !departmentFilter || (s.department && s.department.toLowerCase().includes(departmentFilter.toLowerCase()))
+                    
+                    return matchesSearch && matchesBatch && matchesYear && matchesSem && matchesSec && matchesDept
+                  })
+                  
+                  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every(s => classForm.students.includes(s.id))
 
-                  {/* Search */}
-                  <Input
-                    placeholder="Search students by name or ID…"
-                    value={studentSearch}
-                    onChange={(e) => setStudentSearch(e.target.value)}
-                    className="bg-slate-900/60 border-white/10 text-white placeholder:text-slate-500"
-                  />
+                  return (
+                    <div className="space-y-3 mt-4 bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                          Select Students
+                          {classForm.students.length > 0 && (
+                            <span className="ml-2 text-blue-400 normal-case font-normal bg-blue-500/10 px-2 py-0.5 rounded-full">
+                              {classForm.students.length} selected
+                            </span>
+                          )}
+                        </Label>
+                        {filteredStudents.length > 0 && (
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                            onClick={() => {
+                              if (allFilteredSelected) {
+                                const filteredIds = filteredStudents.map(s => s.id)
+                                setClassForm(p => ({ ...p, students: p.students.filter(id => !filteredIds.includes(id)) }))
+                              } else {
+                                const filteredIds = filteredStudents.map(s => s.id)
+                                setClassForm(p => ({ ...p, students: Array.from(new Set([...p.students, ...filteredIds])) }))
+                              }
+                            }}
+                          >
+                            {allFilteredSelected ? "Deselect All Filtered" : "Select All Filtered"}
+                          </Button>
+                        )}
+                      </div>
 
-                  {students.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic py-2">
-                      No registered students found.
-                    </p>
-                  ) : (
-                    <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10 bg-slate-900/40 divide-y divide-white/5">
-                      {students
-                        .filter((s) =>
-                          !studentSearch ||
-                          s.fullName.toLowerCase().includes(studentSearch.toLowerCase()) ||
-                          s.studentID.toLowerCase().includes(studentSearch.toLowerCase())
-                        )
-                        .map((s) => {
-                          const checked = classForm.students.includes(s.id)
-                          return (
-                            <label
-                              key={s.id}
-                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
-                                checked ? "bg-blue-900/30" : "hover:bg-white/5"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => {
-                                  setClassForm((p) => ({
-                                    ...p,
-                                    students: checked
-                                      ? p.students.filter((id) => id !== s.id)
-                                      : [...p.students, s.id],
-                                  }))
-                                }}
-                                className="accent-blue-500 h-4 w-4 flex-shrink-0"
-                              />
-                              <span className="flex-1 text-sm text-white">{s.fullName}</span>
-                              <span className="text-xs text-slate-500">{s.studentID}</span>
-                            </label>
-                          )
-                        })}
+                      {/* Filters */}
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <Input placeholder="Batch (e.g. 2022)" value={batchFilter} onChange={e => setBatchFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
+                        <Input placeholder="Year (e.g. 3rd)" value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
+                        <Input placeholder="Sem (e.g. 1st)" value={semesterFilter} onChange={e => setSemesterFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
+                        <Input placeholder="Sec (e.g. A)" value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
+                        <Input placeholder="Dept" value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
+                      </div>
+
+                      {/* Search */}
+                      <Input
+                        placeholder="Search students by name or ID…"
+                        value={studentSearch}
+                        onChange={(e) => setStudentSearch(e.target.value)}
+                        className="bg-slate-900/80 border-white/10 text-white placeholder:text-slate-500 h-9"
+                      />
+
+                      {students.length === 0 ? (
+                        <p className="text-xs text-slate-500 italic py-2">
+                          No registered students found.
+                        </p>
+                      ) : (
+                        <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10 bg-slate-900/60 divide-y divide-white/5">
+                          {filteredStudents.length === 0 ? (
+                            <p className="text-xs text-slate-500 italic py-3 px-3 text-center">No students match the filters.</p>
+                          ) : (
+                            filteredStudents.map((s) => {
+                              const checked = classForm.students.includes(s.id)
+                              return (
+                                <label
+                                  key={s.id}
+                                  className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                                    checked ? "bg-blue-900/30" : "hover:bg-white/5"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => {
+                                      setClassForm((p) => ({
+                                        ...p,
+                                        students: checked
+                                          ? p.students.filter((id) => id !== s.id)
+                                          : [...p.students, s.id],
+                                      }))
+                                    }}
+                                    className="accent-blue-500 h-4 w-4 flex-shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-white font-medium truncate">{s.fullName}</p>
+                                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                      <span className="text-xs text-slate-400 font-mono">{s.studentID}</span>
+                                      {s.department && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">{s.department}</span>}
+                                      {s.batch && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">B{s.batch}</span>}
+                                      {s.class_year && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">Yr {s.class_year}</span>}
+                                      {s.semester && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">Sem {s.semester}</span>}
+                                      {s.section && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">Sec {s.section}</span>}
+                                    </div>
+                                  </div>
+                                </label>
+                              )
+                            })
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  )
+                })()}
 
                 <Button type="submit" className="mt-1" disabled={isSubmittingClass}>
                   {isSubmittingClass ? (

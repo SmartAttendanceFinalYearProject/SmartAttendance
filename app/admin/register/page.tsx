@@ -14,13 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const WebcamCapture = ({
   onCapture,
   onLivenessComplete,
+  initialLivenessPassed = false,
 }: {
   onCapture: (imageSrc: string | null) => void
   onLivenessComplete?: (success: boolean) => void
+  initialLivenessPassed?: boolean
 }) => {
   const webcamRef = useRef<Webcam>(null)
   const [showLivenessCheck, setShowLivenessCheck] = useState(false)
-  const [livenessPassed, setLivenessPassed] = useState(false)
+  const [livenessPassed, setLivenessPassed] = useState(initialLivenessPassed)
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot() || null
@@ -31,10 +33,7 @@ const WebcamCapture = ({
     setShowLivenessCheck(false)
     if (success) {
       setLivenessPassed(true)
-      setTimeout(() => {
-        capture()
-        if (onLivenessComplete) onLivenessComplete(true)
-      }, 500)
+      if (onLivenessComplete) onLivenessComplete(true)
     } else {
       if (onLivenessComplete) onLivenessComplete(false)
     }
@@ -84,7 +83,7 @@ const WebcamCapture = ({
       {livenessPassed && (
         <Button onClick={capture} variant="outline" size="sm" className="gap-2 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
           <Camera size={14} />
-          Recapture Image
+          Capture Photo
         </Button>
       )}
     </div>
@@ -117,7 +116,7 @@ export default function AdminRegistrationPage() {
 
   const retakeImage = () => {
     setCapturedImage(null)
-    setLivenessVerified(false)
+    // keep Liveness verified if it was, just retake the photo
     setError(null)
   }
 
@@ -225,65 +224,17 @@ export default function AdminRegistrationPage() {
 
   if (isRegistered) {
     return (
-      <div className="container mx-auto px-4 sm:px-6 py-8 max-lg">
+      <div className="container mx-auto px-4 sm:px-6 py-8 max-w-sm">
         <div className="rounded-2xl border border-white/5 bg-card shadow-2xl overflow-hidden backdrop-blur-md">
-          <div className="px-6 py-6 bg-emerald-500/10 border-b border-white/5">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20">
-                <Check size={24} className="text-emerald-400" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Registration Successful</h2>
-                <p className="text-sm text-emerald-400/80 font-medium">Student data has been securely saved</p>
-              </div>
+          <div className="px-6 py-8 bg-emerald-500/10 border-b border-white/5 flex flex-col items-center text-center">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 mb-4">
+              <Check size={32} className="text-emerald-400" />
             </div>
+            <h2 className="text-xl font-bold text-white tracking-tight mb-1">Registration Successful</h2>
+            <p className="text-sm text-emerald-400/80 font-medium">Student data has been securely saved</p>
           </div>
 
           <div className="p-6">
-            <div className="flex flex-col items-center gap-6">
-              {capturedImage && (
-                <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-emerald-500/30 shadow-xl">
-                  <img src={capturedImage} alt="Registered face" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="w-full space-y-3">
-                <div className="flex items-center justify-between py-3 border-b border-white/5">
-                  <span className="text-sm font-medium text-slate-400">Full Name</span>
-                  <span className="text-sm font-bold text-white">{formData.fullName}</span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-white/5">
-                  <span className="text-sm font-medium text-slate-400">Student ID</span>
-                  <span className="text-sm font-bold text-blue-400 font-mono tracking-wider">{formData.studentID}</span>
-                </div>
-                {formData.department && (
-                  <div className="flex items-center justify-between py-3 border-b border-white/5">
-                    <span className="text-sm font-medium text-slate-400">Department</span>
-                    <span className="text-sm font-bold text-white">{formData.department}</span>
-                  </div>
-                )}
-                {formData.email && (
-                  <div className="flex items-center justify-between py-3 border-b border-white/5">
-                    <span className="text-sm font-medium text-slate-400">Email</span>
-                    <span className="text-sm font-bold text-white">{formData.email}</span>
-                  </div>
-                )}
-                {formData.batch && (
-                  <div className="flex items-center justify-between py-3 border-b border-white/5">
-                    <span className="text-sm font-medium text-slate-400">Batch / Year</span>
-                    <span className="text-sm font-bold text-white">{formData.batch} ({formData.class_year})</span>
-                  </div>
-                )}
-                {formData.semester && (
-                  <div className="flex items-center justify-between py-3">
-                    <span className="text-sm font-medium text-slate-400">Semester</span>
-                    <span className="text-sm font-bold text-white">{formData.semester}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="px-6 pb-6">
             <Button
               className="w-full gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold h-11 rounded-xl shadow-lg shadow-emerald-600/20"
               onClick={() => {
@@ -342,6 +293,7 @@ export default function AdminRegistrationPage() {
                   <WebcamCapture
                     onCapture={setCapturedImage}
                     onLivenessComplete={handleLivenessComplete}
+                    initialLivenessPassed={livenessVerified}
                   />
                 ) : (
                   <div className="relative rounded-xl overflow-hidden w-full max-w-md aspect-video border border-border">
@@ -369,7 +321,7 @@ export default function AdminRegistrationPage() {
               <div className="px-6 pb-6 flex justify-center gap-4">
                 <Button variant="outline" onClick={retakeImage} size="sm" className="gap-2 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
                   <RotateCcw size={14} />
-                  Retake Video
+                  Retake Photo
                 </Button>
                 <Button
                   onClick={() => setActiveTab("info")}

@@ -139,7 +139,7 @@ export default function TeacherScannerPage() {
       </div>
 
       <div className="grid lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-6">
           <div className="rounded-3xl border border-white/5 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
               <div className="flex items-center gap-2">
@@ -211,7 +211,7 @@ export default function TeacherScannerPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-6">
           <div className="rounded-3xl border border-white/5 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden h-full flex flex-col min-h-[500px]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
               <div className="flex items-center gap-2">

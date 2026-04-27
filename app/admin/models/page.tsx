@@ -611,7 +611,7 @@ export default function AdminModelsPage() {
                     return matchesSearch && matchesBatch && matchesYear && matchesSem && matchesSec && matchesDept
                   })
                   
-                  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every(s => classForm.students.includes(s.id))
+                  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every(s => classForm.students.includes(s.studentID))
 
                   return (
                     <div className="space-y-3 mt-4 bg-slate-900/40 p-4 rounded-xl border border-white/5">
@@ -632,10 +632,10 @@ export default function AdminModelsPage() {
                             className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
                             onClick={() => {
                               if (allFilteredSelected) {
-                                const filteredIds = filteredStudents.map(s => s.id)
+                                const filteredIds = filteredStudents.map(s => s.studentID)
                                 setClassForm(p => ({ ...p, students: p.students.filter(id => !filteredIds.includes(id)) }))
                               } else {
-                                const filteredIds = filteredStudents.map(s => s.id)
+                                const filteredIds = filteredStudents.map(s => s.studentID)
                                 setClassForm(p => ({ ...p, students: Array.from(new Set([...p.students, ...filteredIds])) }))
                               }
                             }}
@@ -672,7 +672,7 @@ export default function AdminModelsPage() {
                             <p className="text-xs text-slate-500 italic py-3 px-3 text-center">No students match the filters.</p>
                           ) : (
                             filteredStudents.map((s) => {
-                              const checked = classForm.students.includes(s.id)
+                              const checked = classForm.students.includes(s.studentID)
                               return (
                                 <label
                                   key={s.id}
@@ -687,8 +687,8 @@ export default function AdminModelsPage() {
                                       setClassForm((p) => ({
                                         ...p,
                                         students: checked
-                                          ? p.students.filter((id) => id !== s.id)
-                                          : [...p.students, s.id],
+                                          ? p.students.filter((id) => id !== s.studentID)
+                                          : [...p.students, s.studentID],
                                       }))
                                     }}
                                     className="accent-blue-500 h-4 w-4 flex-shrink-0"

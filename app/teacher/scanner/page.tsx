@@ -24,7 +24,7 @@ export default function TeacherScannerPage() {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const token = localStorage.getItem("token")
+        const token = localStorage.getItem("access_token")
         const response = await fetch("http://127.0.0.1:8000/teacher/classes", {
           headers: {
             "Authorization": `Bearer ${token}`
@@ -61,7 +61,7 @@ export default function TeacherScannerPage() {
       formData.append("file", blob, "attendance.jpg")
       formData.append("class_id", selectedClassId)
 
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("access_token")
       const response = await fetch("http://127.0.0.1:8000/attendance/recognize", {
         method: "POST",
         headers: {

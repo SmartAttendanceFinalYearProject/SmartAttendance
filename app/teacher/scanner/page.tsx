@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import AttendanceList from "@/components/AttendanceList"
-import WebcamFeed from "@/components/WebcamFeed"
+import Webcam from "react-webcam"
 import { Play, Square, Camera, ListChecks, BookOpen, Loader2, AlertCircle } from "lucide-react"
 
 interface Class {
@@ -159,7 +159,13 @@ export default function TeacherScannerPage() {
             </div>
             <div className="p-6">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 aspect-video bg-black">
-                <WebcamFeed ref={webcamRef} />
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={{ facingMode: "user" }}
+                  className="w-full h-full object-cover"
+                />
                 {!isRecording && (
                   <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-6">
                     <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4">

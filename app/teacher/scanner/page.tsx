@@ -222,14 +222,7 @@ export default function TeacherScannerPage() {
               <AttendanceList records={records} />
             </div>
             
-            {!isRecording && records.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-center p-8 opacity-40">
-                  <AlertCircle size={40} className="mx-auto mb-4 text-slate-500" />
-                  <p className="text-sm text-slate-400 font-medium">Session results will appear here</p>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
       </div>

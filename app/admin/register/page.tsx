@@ -187,7 +187,6 @@ export default function AdminRegistrationPage() {
       const response = await fetch("http://localhost:8000/register", {
         method: "POST",
         body: formDataToSend,
-        signal: AbortSignal.timeout(10000),
       })
 
       if (!response.ok) {

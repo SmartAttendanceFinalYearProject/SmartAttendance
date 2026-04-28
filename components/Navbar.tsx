@@ -60,16 +60,16 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-1 mr-4">
             {role === "teacher" && (
               <>
-                <Button variant="ghost" size="sm" className={`font-semibold transition-all ${pathname === "/teacher/scanner" ? "text-blue-400 bg-white/5" : "text-slate-300 hover:text-white hover:bg-white/5"}`} asChild>
-                  <Link href="/teacher/scanner">
-                    <Camera size={16} className="mr-2" />
-                    Scanner
-                  </Link>
-                </Button>
                 <Button variant="ghost" size="sm" className={`font-semibold transition-all ${pathname === "/teacher/dashboard" ? "text-blue-400 bg-white/5" : "text-slate-300 hover:text-white hover:bg-white/5"}`} asChild>
                   <Link href="/teacher/dashboard">
                     <LayoutDashboard size={16} className="mr-2" />
                     Dashboard
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className={`font-semibold transition-all ${pathname === "/teacher/scanner" ? "text-blue-400 bg-white/5" : "text-slate-300 hover:text-white hover:bg-white/5"}`} asChild>
+                  <Link href="/teacher/scanner">
+                    <Camera size={16} className="mr-2" />
+                    Scanner
                   </Link>
                 </Button>
               </>

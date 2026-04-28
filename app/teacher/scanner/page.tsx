@@ -18,6 +18,12 @@ const Webcam = dynamic(() => import("react-webcam"), {
 
 import { generateScheduledSessions, type DaySchedule, type ScheduledSession } from "@/lib/session-utils"
 
+interface Student {
+  id: string;
+  fullName: string;
+  studentID: string;
+}
+
 interface Class {
   id: string;
   class_name: string;
@@ -25,6 +31,7 @@ interface Class {
   start_date: string;
   end_date: string;
   schedule: { schedule: DaySchedule[] };
+  student_details: Student[];
 }
 
 export default function TeacherScannerPage() {
@@ -87,6 +94,21 @@ export default function TeacherScannerPage() {
     fetchClasses()
   }, [])
 
+  // Initialize records when class is selected
+  useEffect(() => {
+    if (selectedClass) {
+      const initialRecords = selectedClass.student_details.map(student => ({
+        student_id: student.studentID,
+        full_name: student.fullName,
+        status: "absent",
+        timestamp: new Date().toISOString()
+      }))
+      setRecords(initialRecords)
+    } else {
+      setRecords([])
+    }
+  }, [selectedClass])
+
   const captureAndRecognize = async () => {
     const currentSession = sessions.find(s => s.id === selectedSessionId)
     if (!webcamRef.current || !selectedClassId || !currentSession) return
@@ -128,7 +150,8 @@ export default function TeacherScannerPage() {
               if (newR.status === "present" || newRecords[idx].status === "unknown") {
                 newRecords[idx] = { ...newRecords[idx], ...newR };
               }
-            } else {
+            } else if (newR.status === "present") {
+              // If not found (e.g. unknown student not in roster), add them
               newRecords.push(newR);
             }
           });
@@ -180,9 +203,8 @@ export default function TeacherScannerPage() {
   }
 
   const startAttendance = () => {
-    if (!selectedClassId || !selectedSessionId) return
+    if (!selectedClassId || !selectedSessionId || !selectedClass) return
     setIsRecording(true)
-    setRecords([]) // Clear records for new session
     setApprovalSuccess(false)
     // In a real app, you might want to pulse every X seconds
     const interval = setInterval(captureAndRecognize, 5000)
@@ -408,11 +430,7 @@ export default function TeacherScannerPage() {
             </div>
             <div className="flex-1 flex flex-col">
               <div className="flex-1 overflow-hidden">
-                <AttendanceList records={records.filter(r => 
-                  r.full_name && 
-                  r.full_name.toLowerCase() !== "unknown" && 
-                  !r.full_name.toLowerCase().includes("not registered")
-                )} />
+                <AttendanceList records={records} />
               </div>
               
               {records.length > 0 && !isRecording && (

@@ -355,20 +355,35 @@ export default function AdminModelsPage() {
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Subject</Button>
               </div>
-              {subjects.map((s) => (
-                <Card key={s.id} className="bg-card/30 border-white/5">
-                  <CardContent className="py-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-semibold">{s.subject_name}</p>
-                      <p className="text-xs text-slate-400">{s.subject_code}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setEditingSubjectId(s.id); setSubjectForm({ subject_name: s.subject_name, subject_code: s.subject_code }); setShowForm(true); }}><Pencil size={14} /></Button>
-                      <Button variant="destructive" size="sm" onClick={() => removeItem("subjects", s.id)}><Trash2 size={14} /></Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {subjects.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
+                  <div className="w-16 h-16 rounded-full bg-blue-500/5 flex items-center justify-center mb-4">
+                    <BookOpen size={32} className="text-slate-600" />
+                  </div>
+                  <p className="text-white font-bold mb-1">No Subjects Registered</p>
+                  <p className="text-xs text-slate-500 mb-6 text-center max-w-[280px]">
+                    Your academic system needs subjects to function. Create your first subject to begin assigning teachers and classes.
+                  </p>
+                  <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl px-6">
+                    <Plus size={16} /> Create First Subject
+                  </Button>
+                </div>
+              ) : (
+                subjects.map((s) => (
+                  <Card key={s.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
+                    <CardContent className="py-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-semibold group-hover:text-blue-400 transition-colors">{s.subject_name}</p>
+                        <p className="text-xs text-slate-400 font-mono">{s.subject_code}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => { setEditingSubjectId(s.id); setSubjectForm({ subject_name: s.subject_name, subject_code: s.subject_code }); setShowForm(true); }}><Pencil size={14} /></Button>
+                        <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("subjects", s.id)}><Trash2 size={14} /></Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </>
           )}
         </div>
@@ -445,20 +460,35 @@ export default function AdminModelsPage() {
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Teacher</Button>
               </div>
-              {teachers.map((t) => (
-                <Card key={t.id} className="bg-card/30 border-white/5">
-                  <CardContent className="py-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-semibold">{t.full_name}</p>
-                      <p className="text-xs text-slate-400">{t.username}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); setShowPassword(false); }}><Pencil size={14} /></Button>
-                      <Button variant="destructive" size="sm" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {teachers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
+                  <div className="w-16 h-16 rounded-full bg-indigo-500/5 flex items-center justify-center mb-4">
+                    <GraduationCap size={32} className="text-slate-600" />
+                  </div>
+                  <p className="text-white font-bold mb-1">No Teachers Found</p>
+                  <p className="text-xs text-slate-500 mb-6 text-center max-w-[280px]">
+                    You haven't added any teachers yet. Registered teachers will be able to manage their own classes and attendance.
+                  </p>
+                  <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl px-6">
+                    <Plus size={16} /> Create First Teacher
+                  </Button>
+                </div>
+              ) : (
+                teachers.map((t) => (
+                  <Card key={t.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
+                    <CardContent className="py-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-semibold group-hover:text-indigo-400 transition-colors">{t.full_name}</p>
+                        <p className="text-xs text-slate-400">{t.username}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); setShowPassword(false); }}><Pencil size={14} /></Button>
+                        <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </>
           )}
         </div>
@@ -727,41 +757,57 @@ export default function AdminModelsPage() {
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Class</Button>
               </div>
-              {classes.map((c) => (
-                <Card key={c.id} className="bg-card/30 border-white/5">
-                  <CardContent className="py-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-semibold">{c.class_name}</p>
-                      <p className="text-xs text-slate-400">{c.teacher_name} • Students: {c.student_count}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const rows = c.schedule?.schedule?.length
-                            ? c.schedule.schedule
-                            : [emptyScheduleRow()]
-                          setEditingClassId(c.id)
-                          setClassForm({
-                            class_name: c.class_name,
-                            subject_id: c.subject_id,
-                            teacher_id: c.teacher_id,
-                            start_date: c.start_date.slice(0, 10),
-                            end_date: c.end_date.slice(0, 10),
-                            scheduleRows: rows,
-                            students: c.students,
-                          })
-                          setShowForm(true)
-                        }}
-                      >
-                        <Pencil size={14} />
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => removeItem("classes", c.id)}><Trash2 size={14} /></Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {classes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/5 flex items-center justify-center mb-4">
+                    <Layers3 size={32} className="text-slate-600" />
+                  </div>
+                  <p className="text-white font-bold mb-1">No Classes Scheduled</p>
+                  <p className="text-xs text-slate-500 mb-6 text-center max-w-[280px]">
+                    Create classes to link subjects, teachers, and students together for real-time attendance tracking.
+                  </p>
+                  <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl px-6">
+                    <Plus size={16} /> Create First Class
+                  </Button>
+                </div>
+              ) : (
+                classes.map((c) => (
+                  <Card key={c.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
+                    <CardContent className="py-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-semibold group-hover:text-emerald-400 transition-colors">{c.class_name}</p>
+                        <p className="text-xs text-slate-400">{c.teacher_name} • Students: {c.student_count}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-white/5 hover:bg-white/10"
+                          onClick={() => {
+                            const rows = c.schedule?.schedule?.length
+                              ? c.schedule.schedule
+                              : [emptyScheduleRow()]
+                            setEditingClassId(c.id)
+                            setClassForm({
+                              class_name: c.class_name,
+                              subject_id: c.subject_id,
+                              teacher_id: c.teacher_id,
+                              start_date: c.start_date.slice(0, 10),
+                              end_date: c.end_date.slice(0, 10),
+                              scheduleRows: rows,
+                              students: c.students,
+                            })
+                            setShowForm(true)
+                          }}
+                        >
+                          <Pencil size={14} />
+                        </Button>
+                        <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("classes", c.id)}><Trash2 size={14} /></Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </>
           )}
         </div>

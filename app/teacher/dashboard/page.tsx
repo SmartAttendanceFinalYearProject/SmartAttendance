@@ -1,10 +1,19 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Dashboard from "@/components/Dashboard"
-import AttendanceList from "@/components/AttendanceList"
+import dynamic from "next/dynamic"
 import { ListChecks, BookOpen, Users, Calendar, Clock, ChevronRight, Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+const Dashboard = dynamic(() => import("@/components/Dashboard"), {
+  loading: () => <div className="h-32 w-full animate-pulse bg-white/5 rounded-2xl" />,
+  ssr: false
+})
+
+const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
+  loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
+  ssr: false
+})
 
 interface Student {
   id: string;

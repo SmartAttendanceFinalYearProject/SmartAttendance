@@ -39,14 +39,14 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   if (!isAuthorized) {
     return (
-      <div className="flex h-[calc(100vh-10rem)] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
-          <p className="text-slate-400 font-medium animate-pulse">Verifying access...</p>
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-500/50" />
         </div>
       </div>
     )
   }
+
 
   return <>{children}</>
 }

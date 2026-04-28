@@ -1,10 +1,20 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import AttendanceList from "@/components/AttendanceList"
-import Webcam from "react-webcam"
 import { Play, Square, Camera, ListChecks, BookOpen, Loader2, AlertCircle } from "lucide-react"
+
+const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
+  loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
+  ssr: false
+})
+
+const Webcam = dynamic(() => import("react-webcam"), {
+  loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
+  ssr: false
+})
+
 
 interface Class {
   id: string;

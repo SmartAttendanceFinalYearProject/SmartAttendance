@@ -45,15 +45,13 @@ export default function LoginPage() {
       toast.success(`Welcome back, ${data.full_name || username}!`)
 
       // Redirect based on role
-      setTimeout(() => {
-        if (data.role === "teacher") {
-          router.push("/teacher/dashboard")
-        } else if (data.role === "admin") {
-          router.push("/admin/analytics")
-        } else {
-          router.push("/dashboard")
-        }
-      }, 1000)
+      if (data.role === "teacher") {
+        router.push("/teacher/dashboard")
+      } else if (data.role === "admin") {
+        router.push("/admin/analytics")
+      } else {
+        router.push("/dashboard")
+      }
     } catch (error: any) {
       // Show error toast
       toast.error(error.message || "Invalid username or password")

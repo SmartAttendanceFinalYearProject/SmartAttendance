@@ -80,12 +80,63 @@ export default function TeacherDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-        <p className="text-slate-400 font-medium">Loading your classes...</p>
+      <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div>
+            <div className="h-10 w-64 bg-white/10 rounded-xl mb-3"></div>
+            <div className="h-4 w-[400px] bg-white/5 rounded-lg"></div>
+          </div>
+          <div className="flex gap-3">
+            <div className="h-14 w-36 bg-white/10 rounded-2xl"></div>
+            <div className="h-14 w-36 bg-white/10 rounded-2xl"></div>
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 bg-white/5 rounded-[2rem] border border-white/5"></div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column Skeleton */}
+          <div className="lg:col-span-4">
+            <div className="h-[480px] bg-white/5 rounded-[2rem] border border-white/5 p-6">
+              <div className="h-10 w-48 bg-white/10 rounded-xl mb-8"></div>
+              <div className="space-y-4">
+                <div className="h-14 w-full bg-white/5 rounded-2xl"></div>
+                <div className="h-14 w-full bg-white/5 rounded-2xl"></div>
+              </div>
+              <div className="mt-10 h-4 w-32 bg-white/10 rounded mb-6"></div>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="h-12 w-full bg-white/5 rounded-xl"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column Skeleton */}
+          <div className="lg:col-span-8">
+            <div className="h-[600px] bg-white/5 rounded-[2rem] border border-white/5 flex flex-col">
+              <div className="h-16 w-full bg-white/10 rounded-t-[2rem] border-b border-white/5 mb-6"></div>
+              <div className="p-6 space-y-8">
+                {[1, 2].map(i => (
+                  <div key={i} className="space-y-4">
+                    <div className="h-8 w-64 bg-white/10 rounded-lg"></div>
+                    <div className="h-48 w-full bg-white/5 rounded-2xl"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
+
 
   if (error) {
     return (

@@ -82,16 +82,16 @@ export default function Navbar() {
                     Analytics
                   </Link>
                 </Button>
-                <Button variant="ghost" size="sm" className={`font-semibold transition-all ${pathname === "/admin/register" ? "text-blue-400 bg-white/5" : "text-slate-300 hover:text-white hover:bg-white/5"}`} asChild>
-                  <Link href="/admin/register">
-                    <UserPlus size={16} className="mr-2" />
-                    Registration
-                  </Link>
-                </Button>
                 <Button variant="ghost" size="sm" className={`font-semibold transition-all ${pathname === "/admin/models" ? "text-blue-400 bg-white/5" : "text-slate-300 hover:text-white hover:bg-white/5"}`} asChild>
                   <Link href="/admin/models">
                     <Blocks size={16} className="mr-2" />
                     Manage Models
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className={`font-semibold transition-all ${pathname === "/admin/register" ? "text-blue-400 bg-white/5" : "text-slate-300 hover:text-white hover:bg-white/5"}`} asChild>
+                  <Link href="/admin/register">
+                    <UserPlus size={16} className="mr-2" />
+                    Registration
                   </Link>
                 </Button>
               </>

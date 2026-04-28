@@ -2,14 +2,24 @@
 
 import type React from "react"
 import { useState, useRef, useCallback } from "react"
-import Webcam from "react-webcam"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, RotateCcw, ArrowRight, Calendar, Hash, BarChart3 } from "lucide-react"
-import { LivenessCheck } from "@/components/LivenessCheck"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const LivenessCheck = dynamic(() => import("@/components/LivenessCheck").then(mod => mod.LivenessCheck), {
+  loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
+  ssr: false
+})
+
+const Webcam = dynamic(() => import("react-webcam"), {
+  loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
+  ssr: false
+})
+
 
 const WebcamCapture = ({
   onCapture,

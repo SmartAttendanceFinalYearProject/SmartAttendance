@@ -15,6 +15,8 @@ const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   ssr: false
 })
 
+import { generateScheduledSessions, type DaySchedule, type ScheduledSession } from "@/lib/session-utils"
+
 interface Student {
   id: string;
   fullName: string;
@@ -45,7 +47,11 @@ interface Class {
   student_count: number;
   student_details: Student[];
   attendance_sessions: AttendanceSession[];
+  start_date: string;
+  end_date: string;
+  schedule: { schedule: DaySchedule[] };
 }
+
 
 export default function TeacherDashboardPage() {
   const [classes, setClasses] = useState<Class[]>([])
@@ -82,53 +88,106 @@ export default function TeacherDashboardPage() {
     return (
       <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl animate-pulse">
         {/* Header Skeleton */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-          <div>
-            <div className="h-10 w-64 bg-white/10 rounded-xl mb-3"></div>
-            <div className="h-4 w-[400px] bg-white/5 rounded-lg"></div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="space-y-3">
+            <div className="h-10 w-72 bg-white/10 rounded-2xl" />
+            <div className="h-4 w-96 bg-white/5 rounded-lg" />
           </div>
           <div className="flex gap-3">
-            <div className="h-14 w-36 bg-white/10 rounded-2xl"></div>
-            <div className="h-14 w-36 bg-white/10 rounded-2xl"></div>
+            {[1, 2].map((i) => (
+              <div key={i} className="h-14 w-40 bg-white/5 border border-white/10 rounded-[1.25rem]" />
+            ))}
           </div>
         </div>
 
-        {/* Stats Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-white/5 rounded-[2rem] border border-white/5"></div>
+            <div key={i} className="h-32 bg-white/5 rounded-[2rem] border border-white/10 p-6 flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-10 h-10 bg-white/10 rounded-2xl" />
+                <div className="w-4 h-4 bg-white/5 rounded-full" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-3 w-20 bg-white/5 rounded" />
+                <div className="h-6 w-12 bg-white/10 rounded-lg" />
+              </div>
+            </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column Skeleton */}
-          <div className="lg:col-span-4">
-            <div className="h-[480px] bg-white/5 rounded-[2rem] border border-white/5 p-6">
-              <div className="h-10 w-48 bg-white/10 rounded-xl mb-8"></div>
-              <div className="space-y-4">
-                <div className="h-14 w-full bg-white/5 rounded-2xl"></div>
-                <div className="h-14 w-full bg-white/5 rounded-2xl"></div>
+          {/* Sidebar Skeleton */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="bg-slate-900/50 border border-white/5 rounded-[2.5rem] p-8 space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/10 rounded-2xl" />
+                <div className="space-y-2">
+                  <div className="h-5 w-40 bg-white/10 rounded-lg" />
+                  <div className="h-3 w-24 bg-white/5 rounded" />
+                </div>
               </div>
-              <div className="mt-10 h-4 w-32 bg-white/10 rounded mb-6"></div>
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="h-12 w-full bg-white/5 rounded-xl"></div>
+              
+              <div className="space-y-4">
+                {[1, 2].map(i => (
+                  <div key={i} className="h-14 w-full bg-white/5 border border-white/5 rounded-2xl" />
                 ))}
+              </div>
+
+              <div className="space-y-4 pt-4">
+                <div className="h-3 w-32 bg-white/10 rounded" />
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/10 rounded-full" />
+                        <div className="space-y-2">
+                          <div className="h-3 w-28 bg-white/10 rounded" />
+                          <div className="h-2 w-16 bg-white/5 rounded" />
+                        </div>
+                      </div>
+                      <div className="w-4 h-4 bg-white/5 rounded" />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column Skeleton */}
+          {/* Main Content Skeleton */}
           <div className="lg:col-span-8">
-            <div className="h-[600px] bg-white/5 rounded-[2rem] border border-white/5 flex flex-col">
-              <div className="h-16 w-full bg-white/10 rounded-t-[2rem] border-b border-white/5 mb-6"></div>
-              <div className="p-6 space-y-8">
-                {[1, 2].map(i => (
-                  <div key={i} className="space-y-4">
-                    <div className="h-8 w-64 bg-white/10 rounded-lg"></div>
-                    <div className="h-48 w-full bg-white/5 rounded-2xl"></div>
+            <div className="bg-slate-900/50 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col h-full min-h-[600px]">
+              <div className="px-8 py-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                <div className="h-6 w-48 bg-white/10 rounded-lg" />
+                <div className="h-6 w-32 bg-blue-500/10 rounded-full" />
+              </div>
+              
+              <div className="p-8 space-y-8">
+                {/* Tabs List Skeleton */}
+                <div className="flex gap-3 overflow-hidden">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-16 w-32 bg-white/5 border border-white/10 rounded-2xl flex-shrink-0" />
+                  ))}
+                </div>
+
+                {/* Session Header Skeleton */}
+                <div className="p-8 bg-white/5 border border-white/5 rounded-[2rem] flex justify-between items-center">
+                  <div className="space-y-3">
+                    <div className="h-6 w-64 bg-white/10 rounded-lg" />
+                    <div className="h-3 w-48 bg-white/5 rounded" />
                   </div>
-                ))}
+                  <div className="flex gap-2">
+                    <div className="h-8 w-24 bg-white/10 rounded-full" />
+                    <div className="h-8 w-24 bg-white/10 rounded-full" />
+                  </div>
+                </div>
+
+                {/* List Skeleton */}
+                <div className="space-y-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-16 w-full bg-white/5 rounded-2xl border border-white/5" />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -136,6 +195,7 @@ export default function TeacherDashboardPage() {
       </div>
     )
   }
+
 
 
   if (error) {
@@ -270,7 +330,7 @@ export default function TeacherDashboardPage() {
               </div>
             </div>
 
-            {/* Right: Attendance Logs - Continuous List */}
+            {/* Right: Attendance Logs - Scheduled Sessions */}
             <div className="lg:col-span-8">
               <div className="rounded-3xl border border-white/5 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col h-full">
                 <div className="px-6 py-5 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -285,69 +345,151 @@ export default function TeacherDashboardPage() {
                   )}
                 </div>
 
-                <div className="p-6 flex-1 max-h-[800px] overflow-y-auto scrollbar-thin">
-                  {selectedClass.attendance_sessions.length > 0 ? (
-                    <div className="space-y-10">
-                      {[...selectedClass.attendance_sessions].reverse().map((session, idx) => {
-                        // Filter out unknown students
-                        const filteredRecords = session.records.filter(r => 
-                          r.full_name && 
-                          r.full_name.toLowerCase() !== "unknown" && 
-                          !r.full_name.toLowerCase().includes("not registered") &&
-                          r.student_id && r.student_id.toLowerCase() !== "unknown"
-                        )
+                <div className="p-6 flex-1">
+                  {(() => {
+                    const scheduledSessions = generateScheduledSessions(
+                      selectedClass.start_date,
+                      selectedClass.end_date,
+                      selectedClass.schedule.schedule
+                    );
 
-                        const presentCount = filteredRecords.filter(r => r.status === 'present').length
-                        const absentCount = filteredRecords.filter(r => r.status === 'absent').length
+                    if (scheduledSessions.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                          <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-white/10 mb-4">
+                            <Calendar size={28} className="text-slate-600" />
+                          </div>
+                          <h4 className="text-white font-bold mb-1">No Scheduled Sessions</h4>
+                          <p className="text-sm text-slate-400 text-center max-w-xs">
+                            Please check the class start and end dates.
+                          </p>
+                        </div>
+                      );
+                    }
 
-                        return (
-                          <div key={session.id} className="relative pl-8 border-l border-white/10 last:border-l-0 pb-2">
-                            {/* Session Marker */}
-                            <div className="absolute left-[-5px] top-0 w-[9px] h-[9px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                            
-                            <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
-                              <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
-                                    Session {selectedClass.attendance_sessions.length - idx}
+                    // Find the default session (either the last recorded one or the first one)
+                    const lastRecordedSession = [...selectedClass.attendance_sessions].sort((a, b) => 
+                      new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+                    )[0];
+
+                    const defaultVal = lastRecordedSession 
+                      ? `session-${new Date(lastRecordedSession.session_date).setHours(0,0,0,0)}`
+                      : scheduledSessions[0].id;
+
+                    return (
+                      <Tabs defaultValue={defaultVal} className="w-full">
+                        <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin">
+                          <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl h-auto flex-nowrap w-max gap-2">
+                            {scheduledSessions.map((session, idx) => {
+                              const sessionDate = new Date(session.date).setHours(0,0,0,0);
+                              const record = selectedClass.attendance_sessions.find(r => 
+                                new Date(r.session_date).setHours(0,0,0,0) === sessionDate
+                              );
+                              const isRecorded = !!record;
+
+                              return (
+                                <TabsTrigger 
+                                  key={session.id} 
+                                  value={`session-${sessionDate}`}
+                                  className="rounded-xl px-5 py-3 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all flex flex-col items-center min-w-[120px]"
+                                >
+                                  <span className="text-[10px] font-black uppercase opacity-50 mb-1">Session {idx + 1}</span>
+                                  <span className="text-sm font-bold whitespace-nowrap">
+                                    {new Date(session.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                   </span>
-                                  <div className="flex items-center gap-1.5">
-                                    <Calendar size={12} className="text-blue-400" />
-                                    <span className="text-xs font-bold text-slate-200">
-                                      {new Date(session.session_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                  <div className="mt-2 flex items-center gap-1.5">
+                                    {isRecorded ? (
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    ) : (
+                                      <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                                    )}
+                                    <span className={`text-[9px] font-bold uppercase ${isRecorded ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                      {isRecorded ? 'Completed' : 'Pending'}
                                     </span>
                                   </div>
+                                </TabsTrigger>
+                              );
+                            })}
+                          </TabsList>
+                        </div>
+
+                        {scheduledSessions.map((session) => {
+                          const sessionDate = new Date(session.date).setHours(0,0,0,0);
+                          const record = selectedClass.attendance_sessions.find(r => 
+                            new Date(r.session_date).setHours(0,0,0,0) === sessionDate
+                          );
+
+                          // Filter out unknown students
+                          const filteredRecords = record ? record.records.filter(r => 
+                            r.full_name && 
+                            r.full_name.toLowerCase() !== "unknown" && 
+                            !r.full_name.toLowerCase().includes("not registered") &&
+                            r.student_id && r.student_id.toLowerCase() !== "unknown"
+                          ) : [];
+
+                          const presentCount = filteredRecords.filter(r => r.status === 'present').length;
+                          const absentCount = filteredRecords.filter(r => r.status === 'absent').length;
+
+                          return (
+                            <TabsContent key={session.id} value={`session-${sessionDate}`} className="mt-0 outline-none animate-in fade-in duration-500">
+                              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/5 border border-white/5 p-6 rounded-[2rem]">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Calendar size={16} className="text-blue-400" />
+                                    <h4 className="text-lg font-bold text-white">{session.label}</h4>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock size={12} className="text-slate-500" />
+                                      <span className="text-xs text-slate-400">Scheduled: {session.startTime} – {session.endTime}</span>
+                                    </div>
+                                    {record && (
+                                      <>
+                                        <div className="w-1 h-1 rounded-full bg-slate-700" />
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-xs text-slate-400">Recorded: {new Date(record.session_date).toLocaleTimeString()}</span>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Clock size={12} className="text-slate-500" />
-                                  <span className="text-xs text-slate-400">
-                                    {new Date(session.session_date).toLocaleTimeString()}
-                                  </span>
+                                {record ? (
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
+                                      {presentCount} Present
+                                    </div>
+                                    <div className="text-xs font-bold text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-full border border-rose-500/20">
+                                      {absentCount} Absent
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-xs font-bold text-slate-400 bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                                    Attendance Pending
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {record ? (
+                                <div className="rounded-[2rem] border border-white/5 bg-black/20 overflow-hidden shadow-inner">
+                                  <AttendanceList records={filteredRecords} />
                                 </div>
-                              </div>
-                              <div className="text-xs font-medium text-slate-400 bg-white/5 border border-white/5 px-4 py-2 rounded-2xl">
-                                <span className="text-emerald-400 font-bold">{presentCount}</span> present / <span className="text-rose-400 font-bold">{absentCount}</span> absent
-                              </div>
-                            </div>
-                            
-                            <div className="rounded-2xl border border-white/5 bg-black/20 overflow-hidden">
-                              <AttendanceList records={filteredRecords} />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                      <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-white/10 mb-4">
-                        <Calendar size={28} className="text-slate-600" />
-                      </div>
-                      <h4 className="text-white font-bold mb-1">No Attendance Sessions</h4>
-                      <p className="text-sm text-slate-400 text-center max-w-xs">
-                        Once you start recording attendance for this class, history will appear here.
-                      </p>
-                    </div>
-                  )}
+                              ) : (
+                                <div className="flex flex-col items-center justify-center py-24 text-slate-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                                    <ListChecks size={28} className="text-slate-600" />
+                                  </div>
+                                  <h4 className="text-white font-bold mb-1">No Attendance Data</h4>
+                                  <p className="text-sm text-slate-400 text-center max-w-xs">
+                                    This session is scheduled for {new Date(session.date).toLocaleDateString()}. Go to the scanner to take attendance.
+                                  </p>
+                                </div>
+                              )}
+                            </TabsContent>
+                          );
+                        })}
+                      </Tabs>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

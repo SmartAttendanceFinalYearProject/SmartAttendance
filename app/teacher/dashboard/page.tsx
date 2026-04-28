@@ -373,7 +373,7 @@ export default function TeacherDashboardPage() {
                     )[0];
 
                     const defaultVal = lastRecordedSession 
-                      ? `session-${new Date(lastRecordedSession.session_date).setHours(0,0,0,0)}`
+                      ? `session-${new Date(lastRecordedSession.session_date).toISOString().split('T')[0]}-${lastRecordedSession.start_time?.replace(/[^a-zA-Z0-9]/g, '') || ''}`
                       : scheduledSessions[0].id;
 
                     return (
@@ -381,16 +381,27 @@ export default function TeacherDashboardPage() {
                         <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin">
                           <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl h-auto flex-nowrap w-max gap-2">
                             {scheduledSessions.map((session, idx) => {
-                              const sessionDate = new Date(session.date).setHours(0,0,0,0);
-                              const record = selectedClass.attendance_sessions.find(r => 
-                                new Date(r.session_date).setHours(0,0,0,0) === sessionDate
-                              );
+                              const sessionDateStr = new Date(session.date).toISOString().split('T')[0];
+                              const record = selectedClass.attendance_sessions.find(r => {
+                                const rDateStr = new Date(r.session_date).toISOString().split('T')[0];
+                                const dateMatch = rDateStr === sessionDateStr;
+                                
+                                // If we have time info, use it for better matching
+                                if (r.start_time && r.end_time) {
+                                  return dateMatch && 
+                                         r.start_time === session.startTime && 
+                                         r.end_time === session.endTime;
+                                }
+                                return dateMatch;
+                              });
                               const isRecorded = !!record;
+
+                              const tabValue = `session-${sessionDateStr}-${session.startTime.replace(/[^a-zA-Z0-9]/g, '')}`;
 
                               return (
                                 <TabsTrigger 
                                   key={session.id} 
-                                  value={`session-${sessionDate}`}
+                                  value={tabValue}
                                   className="rounded-xl px-5 py-3 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all flex flex-col items-center min-w-[120px]"
                                 >
                                   <span className="text-[10px] font-black uppercase opacity-50 mb-1">Session {idx + 1}</span>
@@ -414,24 +425,34 @@ export default function TeacherDashboardPage() {
                         </div>
 
                         {scheduledSessions.map((session) => {
-                          const sessionDate = new Date(session.date).setHours(0,0,0,0);
-                          const record = selectedClass.attendance_sessions.find(r => 
-                            new Date(r.session_date).setHours(0,0,0,0) === sessionDate
-                          );
+                          const sessionDateStr = new Date(session.date).toISOString().split('T')[0];
+                          const record = selectedClass.attendance_sessions.find(r => {
+                            const rDateStr = new Date(r.session_date).toISOString().split('T')[0];
+                            const dateMatch = rDateStr === sessionDateStr;
+                            
+                            if (r.start_time && r.end_time) {
+                              return dateMatch && 
+                                     r.start_time === session.startTime && 
+                                     r.end_time === session.endTime;
+                            }
+                            return dateMatch;
+                          });
+
+                          const tabValue = `session-${sessionDateStr}-${session.startTime.replace(/[^a-zA-Z0-9]/g, '')}`;
 
                           // Filter out unknown students
-                          const filteredRecords = record ? record.records.filter(r => 
+                          const filteredRecords = record ? record.records.filter((r: any) => 
                             r.full_name && 
                             r.full_name.toLowerCase() !== "unknown" && 
                             !r.full_name.toLowerCase().includes("not registered") &&
                             r.student_id && r.student_id.toLowerCase() !== "unknown"
                           ) : [];
 
-                          const presentCount = filteredRecords.filter(r => r.status === 'present').length;
-                          const absentCount = filteredRecords.filter(r => r.status === 'absent').length;
+                          const presentCount = filteredRecords.filter((r: any) => r.status === 'present').length;
+                          const absentCount = filteredRecords.filter((r: any) => r.status === 'absent').length;
 
                           return (
-                            <TabsContent key={session.id} value={`session-${sessionDate}`} className="mt-0 outline-none animate-in fade-in duration-500">
+                            <TabsContent key={session.id} value={tabValue} className="mt-0 outline-none animate-in fade-in duration-500">
                               <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/5 border border-white/5 p-6 rounded-[2rem]">
                                 <div>
                                   <div className="flex items-center gap-2 mb-2">

@@ -35,6 +35,8 @@ export default function TeacherScannerPage() {
   const [records, setRecords] = useState<any[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
+  const [approvalSuccess, setApprovalSuccess] = useState(false)
   const webcamRef = useRef<any>(null)
 
   const selectedClass = classes.find(c => c.id === selectedClassId)
@@ -117,7 +119,21 @@ export default function TeacherScannerPage() {
 
       const result = await response.json()
       if (result.status === "success") {
-        setRecords(result.results)
+        setRecords(prev => {
+          const newRecords = [...prev];
+          result.results.forEach((newR: any) => {
+            const idx = newRecords.findIndex(r => r.student_id === newR.student_id);
+            if (idx >= 0) {
+              // Update if new result is "present" or if current is "unknown"
+              if (newR.status === "present" || newRecords[idx].status === "unknown") {
+                newRecords[idx] = { ...newRecords[idx], ...newR };
+              }
+            } else {
+              newRecords.push(newR);
+            }
+          });
+          return newRecords;
+        });
       }
     } catch (err) {
       console.error("Recognition failed:", err)
@@ -126,9 +142,48 @@ export default function TeacherScannerPage() {
     }
   }
 
+  const approveAttendance = async () => {
+    const currentSession = sessions.find(s => s.id === selectedSessionId)
+    if (!selectedClassId || !currentSession || records.length === 0) return
+
+    setIsApproving(true)
+    try {
+      const formData = new FormData()
+      formData.append("class_id", selectedClassId)
+      formData.append("session_date", currentSession.date)
+      formData.append("start_time", currentSession.startTime)
+      formData.append("end_time", currentSession.endTime)
+      formData.append("records_json", JSON.stringify(records))
+
+      const token = localStorage.getItem("access_token")
+      const response = await fetch("http://127.0.0.1:8000/attendance/approve", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      const result = await response.json()
+      if (result.status === "success") {
+        setApprovalSuccess(true)
+        setTimeout(() => setApprovalSuccess(false), 3000)
+      } else {
+        alert("Approval failed: " + result.message)
+      }
+    } catch (err) {
+      console.error("Approval failed:", err)
+      alert("An error occurred during approval")
+    } finally {
+      setIsApproving(false)
+    }
+  }
+
   const startAttendance = () => {
     if (!selectedClassId || !selectedSessionId) return
     setIsRecording(true)
+    setRecords([]) // Clear records for new session
+    setApprovalSuccess(false)
     // In a real app, you might want to pulse every X seconds
     const interval = setInterval(captureAndRecognize, 5000)
     ;(window as any).attendanceInterval = interval
@@ -351,12 +406,42 @@ export default function TeacherScannerPage() {
                 </span>
               )}
             </div>
-            <div className="flex-1">
-              <AttendanceList records={records.filter(r => 
-                r.full_name && 
-                r.full_name.toLowerCase() !== "unknown" && 
-                !r.full_name.toLowerCase().includes("not registered")
-              )} />
+            <div className="flex-1 flex flex-col">
+              <div className="flex-1 overflow-hidden">
+                <AttendanceList records={records.filter(r => 
+                  r.full_name && 
+                  r.full_name.toLowerCase() !== "unknown" && 
+                  !r.full_name.toLowerCase().includes("not registered")
+                )} />
+              </div>
+              
+              {records.length > 0 && !isRecording && (
+                <div className="p-6 border-t border-white/5 bg-white/5 mt-auto">
+                  <Button
+                    onClick={approveAttendance}
+                    disabled={isApproving || approvalSuccess}
+                    className={`w-full h-14 font-black gap-3 shadow-xl rounded-2xl transition-all uppercase tracking-wider ${
+                      approvalSuccess 
+                        ? "bg-emerald-600 hover:bg-emerald-600 text-white" 
+                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20"
+                    }`}
+                  >
+                    {isApproving ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : approvalSuccess ? (
+                      <ListChecks size={18} />
+                    ) : (
+                      <BookOpen size={18} />
+                    )}
+                    {isApproving ? "Saving..." : approvalSuccess ? "Attendance Saved!" : "Approve & Save Attendance"}
+                  </Button>
+                  {approvalSuccess && (
+                    <p className="text-center text-[10px] text-emerald-400 font-bold mt-3 animate-bounce">
+                      Attendance has been successfully recorded in the database.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

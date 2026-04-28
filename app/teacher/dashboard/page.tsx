@@ -219,7 +219,7 @@ export default function TeacherDashboardPage() {
               </div>
             </div>
 
-            {/* Right: Attendance Logs with Tabs */}
+            {/* Right: Attendance Logs - Continuous List */}
             <div className="lg:col-span-8">
               <div className="rounded-3xl border border-white/5 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col h-full">
                 <div className="px-6 py-5 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -234,53 +234,58 @@ export default function TeacherDashboardPage() {
                   )}
                 </div>
 
-                <div className="p-6 flex-1">
+                <div className="p-6 flex-1 max-h-[800px] overflow-y-auto scrollbar-thin">
                   {selectedClass.attendance_sessions.length > 0 ? (
-                    <Tabs defaultValue={selectedClass.attendance_sessions[selectedClass.attendance_sessions.length - 1].id} className="w-full">
-                      <div className="mb-6 overflow-x-auto pb-2 scrollbar-thin">
-                        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl h-auto flex-nowrap w-max">
-                          {selectedClass.attendance_sessions.map((session, idx) => (
-                            <TabsTrigger 
-                              key={session.id} 
-                              value={session.id}
-                              className="rounded-xl px-4 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all"
-                            >
-                              <div className="flex flex-col items-center gap-0.5">
-                                <span className="text-[10px] font-bold uppercase opacity-60">Session {idx + 1}</span>
-                                <span className="text-xs font-semibold whitespace-nowrap">
-                                  {new Date(session.session_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                </span>
-                              </div>
-                            </TabsTrigger>
-                          )).reverse()}
-                        </TabsList>
-                      </div>
+                    <div className="space-y-10">
+                      {[...selectedClass.attendance_sessions].reverse().map((session, idx) => {
+                        // Filter out unknown students
+                        const filteredRecords = session.records.filter(r => 
+                          r.full_name && 
+                          r.full_name.toLowerCase() !== "unknown" && 
+                          !r.full_name.toLowerCase().includes("not registered") &&
+                          r.student_id && r.student_id.toLowerCase() !== "unknown"
+                        )
 
-                      {selectedClass.attendance_sessions.map((session) => (
-                        <TabsContent key={session.id} value={session.id} className="mt-0 outline-none animate-in fade-in duration-500">
-                          <div className="mb-4 flex items-center justify-between px-2">
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-1.5">
-                                <Calendar size={12} className="text-slate-500" />
-                                <span className="text-xs text-slate-400">
-                                  {new Date(session.session_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                </span>
+                        const presentCount = filteredRecords.filter(r => r.status === 'present').length
+                        const absentCount = filteredRecords.filter(r => r.status === 'absent').length
+
+                        return (
+                          <div key={session.id} className="relative pl-8 border-l border-white/10 last:border-l-0 pb-2">
+                            {/* Session Marker */}
+                            <div className="absolute left-[-5px] top-0 w-[9px] h-[9px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                            
+                            <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
+                              <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
+                                    Session {selectedClass.attendance_sessions.length - idx}
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar size={12} className="text-blue-400" />
+                                    <span className="text-xs font-bold text-slate-200">
+                                      {new Date(session.session_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Clock size={12} className="text-slate-500" />
+                                  <span className="text-xs text-slate-400">
+                                    {new Date(session.session_date).toLocaleTimeString()}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <Clock size={12} className="text-slate-500" />
-                                <span className="text-xs text-slate-400">
-                                  {new Date(session.session_date).toLocaleTimeString()}
-                                </span>
+                              <div className="text-xs font-medium text-slate-400 bg-white/5 border border-white/5 px-4 py-2 rounded-2xl">
+                                <span className="text-emerald-400 font-bold">{presentCount}</span> present / <span className="text-rose-400 font-bold">{absentCount}</span> absent
                               </div>
                             </div>
-                            <div className="text-xs font-medium text-slate-400">
-                              <span className="text-emerald-400 font-bold">{session.records.filter(r => r.status === 'present').length}</span> present / <span className="text-rose-400 font-bold">{session.records.filter(r => r.status === 'absent').length}</span> absent
+                            
+                            <div className="rounded-2xl border border-white/5 bg-black/20 overflow-hidden">
+                              <AttendanceList records={filteredRecords} />
                             </div>
                           </div>
-                          <AttendanceList records={session.records} />
-                        </TabsContent>
-                      ))}
-                    </Tabs>
+                        )
+                      })}
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                       <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-white/10 mb-4">

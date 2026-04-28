@@ -107,7 +107,7 @@ export default function TeacherScannerPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -149,7 +149,7 @@ export default function TeacherScannerPage() {
       </div>
 
       <div className="grid lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-5">
           <div className="rounded-3xl border border-white/5 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
               <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export default function TeacherScannerPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-7">
           <div className="rounded-3xl border border-white/5 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden h-full flex flex-col min-h-[500px]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
               <div className="flex items-center gap-2">
@@ -230,18 +230,25 @@ export default function TeacherScannerPage() {
               </div>
               {records.length > 0 && (
                 <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
-                  {records.filter(r => r.status === 'present').length} IDENTIFIED
+                  {records.filter(r => 
+                    r.full_name && 
+                    r.full_name.toLowerCase() !== "unknown" && 
+                    !r.full_name.toLowerCase().includes("not registered")
+                  ).length} IDENTIFIED
                 </span>
               )}
             </div>
             <div className="flex-1">
-              <AttendanceList records={records} />
+              <AttendanceList records={records.filter(r => 
+                r.full_name && 
+                r.full_name.toLowerCase() !== "unknown" && 
+                !r.full_name.toLowerCase().includes("not registered")
+              )} />
             </div>
-            
-
           </div>
         </div>
       </div>
     </div>
+
   )
 }

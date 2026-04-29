@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff } from "lucide-react"
+import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff, User, Hash, Calendar, Clock, Users, CheckCircle2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
@@ -43,6 +44,47 @@ const emptyClassForm = {
 }
 
 type Tab = "subjects" | "teachers" | "classes"
+
+// ── Helper Components for Details ──
+function DetailItem({ label, value, icon, isCode = false }: { label: string; value: string; icon: React.ReactNode; isCode?: boolean }) {
+  return (
+    <div className="space-y-2 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-colors group">
+      <div className="flex items-center gap-2 text-slate-400 group-hover:text-blue-400 transition-colors">
+        {icon}
+        <span className="text-[10px] uppercase tracking-widest font-bold">{label}</span>
+      </div>
+      <p className={`text-white font-medium ${isCode ? "font-mono text-xs bg-black/30 p-2 rounded-lg border border-white/5 mt-1" : "text-base"}`}>
+        {value}
+      </p>
+    </div>
+  )
+}
+
+function InfoBadge({ icon, text, className = "" }: { icon: React.ReactNode; text: string; className?: string }) {
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs font-medium text-white backdrop-blur-md ${className}`}>
+      <span className="text-blue-400">{icon}</span>
+      <span>{text}</span>
+    </div>
+  )
+}
+
+function DetailSection({ title, icon, children, badge }: { title: string; icon: React.ReactNode; children: React.ReactNode; badge?: string }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <div className="flex items-center gap-2 text-blue-400">
+          {icon}
+          <h4 className="text-sm font-bold uppercase tracking-wider">{title}</h4>
+        </div>
+        {badge && <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[10px]">{badge}</Badge>}
+      </div>
+      <div className="animate-fade-in-up">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export default function AdminModelsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("subjects")
@@ -483,158 +525,175 @@ export default function AdminModelsPage() {
       )}
 
       <Dialog open={viewModal.isOpen} onOpenChange={(open) => setViewModal({ isOpen: open, type: null, data: null })}>
-        <DialogContent className="bg-[#0d1b2e] border-white/10 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold capitalize">
-              {viewModal.type === "subjects" && "Subject Details"}
-              {viewModal.type === "teachers" && "Teacher Details"}
-              {viewModal.type === "classes" && "Class Details"}
-            </DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Detailed information about the selected {viewModal.type?.slice(0, -1)}
-            </DialogDescription>
+        <DialogContent className="bg-[#0b1222]/95 backdrop-blur-xl border-white/10 text-white max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-0 shadow-2xl shadow-blue-500/10 gap-0">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
+          
+          <DialogHeader className="p-8 pb-4">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner">
+                {viewModal.type === "subjects" && <BookOpen size={24} />}
+                {viewModal.type === "teachers" && <GraduationCap size={24} />}
+                {viewModal.type === "classes" && <Layers3 size={24} />}
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-bold tracking-tight text-white">
+                  {viewModal.type === "subjects" && "Subject Details"}
+                  {viewModal.type === "teachers" && "Teacher Details"}
+                  {viewModal.type === "classes" && "Class Details"}
+                </DialogTitle>
+                <DialogDescription className="text-slate-400 text-sm mt-1">
+                  Comprehensive overview for this {viewModal.type?.slice(0, -1)} resource.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          {viewModal.type === "subjects" && viewModal.data && (
-            <div className="space-y-4 mt-4">
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject Name</label>
-                    <p className="text-white font-medium mt-1">{viewModal.data.subject_name}</p>
+          <div className="flex-1 overflow-y-auto p-8 pt-2 scrollbar-thin">
+            {viewModal.type === "subjects" && viewModal.data && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DetailItem label="Subject Name" value={viewModal.data.subject_name} icon={<BookOpen size={14} />} />
+                  <DetailItem label="Subject Code" value={viewModal.data.subject_code} icon={<Hash size={14} />} isCode />
+                </div>
+                <DetailItem label="Internal Resource ID" value={viewModal.data.id} icon={<Layers3 size={14} />} isCode />
+              </div>
+            )}
+
+            {viewModal.type === "teachers" && viewModal.data && (
+              <div className="space-y-8">
+                <div className="flex items-center gap-5 p-6 rounded-3xl bg-gradient-to-br from-blue-500/10 to-indigo-600/5 border border-white/5 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <GraduationCap size={80} />
                   </div>
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject Code</label>
-                    <p className="text-white font-mono mt-1">{viewModal.data.subject_code}</p>
+                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-blue-950/40 transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                    {viewModal.data.full_name.charAt(0)}
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-2xl font-bold text-white tracking-tight">{viewModal.data.full_name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <p className="text-blue-400 text-sm font-medium">Verified Academic Faculty</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <label className="text-xs text-slate-400 uppercase tracking-wider">ID</label>
-                <p className="text-white font-mono text-sm mt-1">{viewModal.data.id}</p>
-              </div>
-            </div>
-          )}
 
-          {viewModal.type === "teachers" && viewModal.data && (
-            <div className="space-y-4 mt-4">
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Full Name</label>
-                    <p className="text-white font-medium mt-1">{viewModal.data.full_name}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DetailItem label="Portal Username" value={viewModal.data.username} icon={<User size={14} />} isCode />
+                  <DetailItem 
+                    label="Primary Subject" 
+                    value={viewModal.data.subject_name || subjects.find(s => s.id === viewModal.data.subject_id)?.subject_name || "Not Assigned"} 
+                    icon={<BookOpen size={14} />} 
+                  />
+                </div>
+                <DetailItem label="Teacher Reference ID" value={viewModal.data.id} icon={<Hash size={14} />} isCode />
+              </div>
+            )}
+
+            {viewModal.type === "classes" && viewModal.data && (
+              <div className="space-y-8">
+                {/* Hero Header */}
+                <div className="relative p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 via-blue-600/10 to-transparent border border-blue-500/20 overflow-hidden shadow-lg shadow-blue-950/20">
+                  <div className="absolute -right-12 -top-12 text-white/5 rotate-12 scale-150">
+                    <Layers3 size={160} />
                   </div>
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Username</label>
-                    <p className="text-white font-mono mt-1">{viewModal.data.username}</p>
+                  <div className="relative z-10">
+                    <Badge className="mb-4 bg-blue-500 text-white border-0 px-3 py-1 text-[10px] uppercase tracking-widest font-black">Active Class</Badge>
+                    <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">{viewModal.data.class_name}</h3>
+                    <div className="flex flex-wrap gap-3">
+                      <InfoBadge icon={<User size={14} />} text={viewModal.data.teacher_name} />
+                      <InfoBadge icon={<BookOpen size={14} />} text={viewModal.data.subject_name} />
+                      <InfoBadge icon={<Users size={14} />} text={`${viewModal.data.student_count || viewModal.data.students?.length || 0} Students`} />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <label className="text-xs text-slate-400 uppercase tracking-wider">Assigned Subject</label>
-                <p className="text-white mt-1">{viewModal.data.subject_name || subjects.find(s => s.id === viewModal.data.subject_id)?.subject_name || "Not Assigned"}</p>
-                {viewModal.data.subject_id && (
-                  <p className="text-xs text-slate-500 mt-1 font-mono">Subject ID: {viewModal.data.subject_id}</p>
-                )}
-              </div>
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <label className="text-xs text-slate-400 uppercase tracking-wider">Teacher ID</label>
-                <p className="text-white font-mono text-sm mt-1">{viewModal.data.id}</p>
-              </div>
-            </div>
-          )}
 
-          {viewModal.type === "classes" && viewModal.data && (
-            <div className="space-y-4 mt-4">
-              {/* Basic Info */}
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <h3 className="text-sm font-semibold text-blue-400 mb-3">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Class Name</label>
-                    <p className="text-white font-medium mt-1">{viewModal.data.class_name}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Teacher</label>
-                    <p className="text-white mt-1">{viewModal.data.teacher_name}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Subject Info */}
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <h3 className="text-sm font-semibold text-blue-400 mb-3">Subject Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject Name</label>
-                    <p className="text-white mt-1">{viewModal.data.subject_name}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject ID</label>
-                    <p className="text-white font-mono text-sm mt-1">{viewModal.data.subject_id}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Date Range */}
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <h3 className="text-sm font-semibold text-blue-400 mb-3">Date Range</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">Start Date</label>
-                    <p className="text-white mt-1">{new Date(viewModal.data.start_date).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider">End Date</label>
-                    <p className="text-white mt-1">{new Date(viewModal.data.end_date).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Schedule */}
-              {viewModal.data.schedule_rows && viewModal.data.schedule_rows.length > 0 && (
-                <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                  <h3 className="text-sm font-semibold text-blue-400 mb-3">Weekly Schedule</h3>
-                  <div className="space-y-2">
-                    {viewModal.data.schedule_rows.map((row: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                        <span className="text-white font-medium">{row.day}</span>
-                        <span className="text-slate-300">{row.start_time} - {row.end_time}</span>
+                {/* Grid Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <DetailSection title="Class Timeline" icon={<Calendar size={18} />}>
+                    <div className="space-y-3">
+                      <div className="flex flex-col gap-1 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/30 transition-colors">
+                        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Commencement</span>
+                        <span className="text-sm font-semibold text-white">{new Date(viewModal.data.start_date).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <div className="flex flex-col gap-1 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-rose-500/30 transition-colors">
+                        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Conclusion</span>
+                        <span className="text-sm font-semibold text-white">{new Date(viewModal.data.end_date).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                      </div>
+                    </div>
+                  </DetailSection>
 
-              {/* Students */}
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <h3 className="text-sm font-semibold text-blue-400 mb-3">
-                  Enrolled Students ({viewModal.data.student_count || viewModal.data.students?.length || 0})
-                </h3>
-                {viewModal.data.students && viewModal.data.students.length > 0 ? (
-                  <div className="max-h-48 overflow-y-auto space-y-1">
-                    {viewModal.data.students.map((studentId: string, idx: number) => {
-                      const student = students.find(s => s.studentID === studentId)
-                      return (
-                        <div key={idx} className="flex items-center justify-between py-1 text-sm">
-                          <span className="text-white">{student?.fullName || "Unknown Student"}</span>
-                          <span className="text-slate-400 font-mono text-xs">{studentId}</span>
+                  <DetailSection title="Session Schedule" icon={<Clock size={18} />}>
+                    <div className="space-y-2">
+                      {viewModal.data.schedule_rows && viewModal.data.schedule_rows.length > 0 ? (
+                        viewModal.data.schedule_rows.map((row: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/10 hover:bg-blue-500/10 transition-all group">
+                            <span className="text-sm font-bold text-blue-300 group-hover:text-blue-100">{row.day}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-[10px] font-mono text-blue-300 border border-blue-500/20">
+                                {row.start_time} - {row.end_time}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-6 rounded-xl border border-dashed border-white/5 bg-white/5">
+                          <p className="text-slate-500 text-xs italic">No specific sessions defined</p>
                         </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-slate-400 text-sm">No students enrolled in this class.</p>
-                )}
-              </div>
+                      )}
+                    </div>
+                  </DetailSection>
+                </div>
 
-              {/* Class ID */}
-              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
-                <label className="text-xs text-slate-400 uppercase tracking-wider">Class ID</label>
-                <p className="text-white font-mono text-sm mt-1">{viewModal.data.id}</p>
+                {/* Enrolled Students Section */}
+                <DetailSection title="Enrolled Students" icon={<Users size={18} />} badge={`${viewModal.data.students?.length || 0}`}>
+                  {viewModal.data.students && viewModal.data.students.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-2 scrollbar-thin">
+                      {viewModal.data.students.map((studentId: string, idx: number) => {
+                        const student = students.find(s => s.studentID === studentId)
+                        return (
+                          <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-blue-500/20 transition-all group">
+                            <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-inner">
+                              <User size={18} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[140px]">
+                                {student?.fullName || "Student Name"}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono mt-0.5 uppercase tracking-tighter">ID: {studentId}</span>
+                            </div>
+                            <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                              <CheckCircle2 size={12} className="text-emerald-500" />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 rounded-3xl border border-dashed border-white/10 bg-white/5">
+                      <Users size={32} className="mx-auto text-slate-600 mb-2 opacity-20" />
+                      <p className="text-slate-500 text-sm">No students currently enrolled in this record.</p>
+                    </div>
+                  )}
+                </DetailSection>
+
+                {/* System ID Footer */}
+                <div className="p-4 rounded-2xl bg-black/20 border border-white/5 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 uppercase font-black tracking-widest">System Reference Code</span>
+                  <span className="text-[10px] font-mono text-slate-400 select-all">{viewModal.data.id}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          
+          <div className="p-6 border-t border-white/5 bg-slate-900/80 backdrop-blur-md flex justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => setViewModal({ isOpen: false, type: null, data: null })}
+              className="border-white/10 hover:bg-white/10 text-slate-300 hover:text-white px-8 rounded-xl font-bold text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-black/20"
+            >
+              Dismiss Details
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

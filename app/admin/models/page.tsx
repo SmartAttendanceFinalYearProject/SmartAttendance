@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff } from "lucide-react"
 
 type Subject = { id: string; subject_name: string; subject_code: string }
@@ -70,6 +71,7 @@ export default function AdminModelsPage() {
   const [classForm, setClassForm] = useState(emptyClassForm)
   const [editingClassId, setEditingClassId] = useState<string | null>(null)
   const [isSubmittingClass, setIsSubmittingClass] = useState(false)
+  const [viewingItem, setViewingItem] = useState<{ type: Tab; data: any } | null>(null)
 
   const authHeader = useMemo(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
@@ -377,6 +379,7 @@ export default function AdminModelsPage() {
                         <p className="text-xs text-slate-400 font-mono">{s.subject_code}</p>
                       </div>
                       <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => setViewingItem({ type: "subjects", data: s })}><Eye size={14} /></Button>
                         <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => { setEditingSubjectId(s.id); setSubjectForm({ subject_name: s.subject_name, subject_code: s.subject_code }); setShowForm(true); }}><Pencil size={14} /></Button>
                         <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("subjects", s.id)}><Trash2 size={14} /></Button>
                       </div>
@@ -482,6 +485,7 @@ export default function AdminModelsPage() {
                         <p className="text-xs text-slate-400">{t.username}</p>
                       </div>
                       <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => setViewingItem({ type: "teachers", data: t })}><Eye size={14} /></Button>
                         <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); setShowPassword(false); }}><Pencil size={14} /></Button>
                         <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
                       </div>
@@ -779,6 +783,7 @@ export default function AdminModelsPage() {
                         <p className="text-xs text-slate-400">{c.teacher_name} • Students: {c.student_count}</p>
                       </div>
                       <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => setViewingItem({ type: "classes", data: c })}><Eye size={14} /></Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -812,6 +817,148 @@ export default function AdminModelsPage() {
           )}
         </div>
       )}
+
+      {/* ── View Detail Modal ── */}
+      <Dialog open={!!viewingItem} onOpenChange={() => setViewingItem(null)}>
+        <DialogContent className="bg-[#0b1426] border-white/10 text-white max-w-2xl overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              {viewingItem?.type === "subjects" && <BookOpen className="text-blue-400" />}
+              {viewingItem?.type === "teachers" && <GraduationCap className="text-indigo-400" />}
+              {viewingItem?.type === "classes" && <Layers3 className="text-emerald-400" />}
+              {viewingItem?.type === "subjects" ? "Subject Details" : viewingItem?.type === "teachers" ? "Teacher Details" : "Class Details"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-6 overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
+            {viewingItem?.type === "subjects" && (
+              <div className="grid gap-4">
+                <div className="grid grid-cols-3 gap-1">
+                  <span className="text-slate-400 text-sm">Subject Name</span>
+                  <span className="col-span-2 font-medium">{viewingItem.data.subject_name}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  <span className="text-slate-400 text-sm">Subject Code</span>
+                  <span className="col-span-2 font-mono text-blue-400">{viewingItem.data.subject_code}</span>
+                </div>
+                <div className="pt-4 border-t border-white/5">
+                  <h4 className="text-xs font-semibold uppercase text-slate-500 mb-3">Assigned Teachers</h4>
+                  {teachers.filter(t => t.subject_id === viewingItem.data.id).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {teachers.filter(t => t.subject_id === viewingItem.data.id).map(t => (
+                        <span key={t.id} className="bg-indigo-500/10 text-indigo-300 px-3 py-1 rounded-full text-xs border border-indigo-500/20">
+                          {t.full_name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No teachers assigned yet</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {viewingItem?.type === "teachers" && (
+              <div className="grid gap-4">
+                <div className="grid grid-cols-3 gap-1">
+                  <span className="text-slate-400 text-sm">Full Name</span>
+                  <span className="col-span-2 font-medium">{viewingItem.data.full_name}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  <span className="text-slate-400 text-sm">Username</span>
+                  <span className="col-span-2 font-mono text-indigo-400">{viewingItem.data.username}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  <span className="text-slate-400 text-sm">Specialization</span>
+                  <span className="col-span-2 font-medium">
+                    {subjects.find(s => s.id === viewingItem.data.subject_id)?.subject_name || "N/A"}
+                  </span>
+                </div>
+                <div className="pt-4 border-t border-white/5">
+                  <h4 className="text-xs font-semibold uppercase text-slate-500 mb-3">Assigned Classes</h4>
+                  {classes.filter(c => c.teacher_id === viewingItem.data.id).length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {classes.filter(c => c.teacher_id === viewingItem.data.id).map(c => (
+                        <div key={c.id} className="bg-emerald-500/5 border border-emerald-500/10 p-2 rounded-lg">
+                          <p className="text-sm font-medium text-emerald-400">{c.class_name}</p>
+                          <p className="text-[10px] text-slate-400">{c.student_count} Students</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No classes assigned yet</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {viewingItem?.type === "classes" && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-slate-400 text-xs block mb-1">Class Name</span>
+                    <span className="font-medium text-lg text-emerald-400">{viewingItem.data.class_name}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-xs block mb-1">Subject</span>
+                    <span className="font-medium">{subjects.find(s => s.id === viewingItem.data.subject_id)?.subject_name || "N/A"}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-slate-400 text-xs block mb-1">Teacher</span>
+                    <span className="font-medium">{viewingItem.data.teacher_name}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-xs block mb-1">Duration</span>
+                    <span className="font-medium text-xs">
+                      {new Date(viewingItem.data.start_date).toLocaleDateString()} - {new Date(viewingItem.data.end_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/5">
+                  <h4 className="text-xs font-semibold uppercase text-slate-500 mb-3 flex items-center justify-between">
+                    Weekly Schedule
+                    <span className="text-[10px] lowercase font-normal bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full">Recurrent</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {viewingItem.data.schedule?.schedule?.map((s: DaySchedule, i: number) => (
+                      <div key={i} className="flex items-center justify-between bg-white/5 p-2 rounded-lg border border-white/5">
+                        <span className="text-sm font-medium">{s.day}</span>
+                        <span className="text-xs font-mono text-slate-400">{s.start_time} - {s.end_time}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/5">
+                  <h4 className="text-xs font-semibold uppercase text-slate-500 mb-3">
+                    Students ({viewingItem.data.students?.length || 0})
+                  </h4>
+                  <div className="max-h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2 pr-2 custom-scrollbar">
+                    {viewingItem.data.students?.map((studentId: string) => {
+                      const student = students.find(s => s.studentID === studentId)
+                      return (
+                        <div key={studentId} className="bg-white/5 p-2 rounded-lg flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-[10px] font-bold text-blue-400 border border-blue-500/20">
+                            {student?.fullName?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "S"}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">{student?.fullName || "Unknown Student"}</p>
+                            <p className="text-[10px] text-slate-500 font-mono">{studentId}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

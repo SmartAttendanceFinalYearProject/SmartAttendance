@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { ListChecks, BookOpen, Users, Calendar, Clock, ChevronRight, Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -58,11 +58,13 @@ export default function TeacherDashboardPage() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<string>("")
 
   useEffect(() => {
     const fetchClasses = async () => {
       try {
         const token = localStorage.getItem("access_token")
+        if (!token) return
         const response = await fetch("http://127.0.0.1:8000/teacher/classes", {
           headers: {
             "Authorization": `Bearer ${token}`
@@ -71,9 +73,15 @@ export default function TeacherDashboardPage() {
         if (!response.ok) throw new Error("Failed to fetch classes")
         const data = await response.json()
         setClasses(data)
-        if (data.length > 0) {
-          setSelectedClass(data[0])
-        }
+        
+        setSelectedClass(prev => {
+          if (!prev && data.length > 0) return data[0];
+          if (prev) {
+            const updated = data.find((c: any) => c.id === prev.id);
+            return updated || data[0];
+          }
+          return null;
+        });
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -82,7 +90,75 @@ export default function TeacherDashboardPage() {
     }
 
     fetchClasses()
+    const interval = setInterval(fetchClasses, 10000) // Auto-refresh every 10s
+    return () => clearInterval(interval)
   }, [])
+
+  const scheduledSessions = useMemo(() => {
+    if (!selectedClass) return [];
+    return generateScheduledSessions(
+      selectedClass.start_date,
+      selectedClass.end_date,
+      selectedClass.schedule.schedule
+    );
+  }, [selectedClass]);
+
+  useEffect(() => {
+    if (selectedClass && scheduledSessions.length > 0) {
+      const lastRecordedSession = [...selectedClass.attendance_sessions].sort((a, b) => 
+        new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+      )[0];
+
+      const defaultVal = lastRecordedSession 
+        ? `session-${new Date(lastRecordedSession.session_date).toISOString().split('T')[0]}-${lastRecordedSession.start_time?.replace(/[^a-zA-Z0-9]/g, '') || ''}`
+        : scheduledSessions[0].id;
+      
+      setActiveTab(defaultVal);
+    }
+  }, [selectedClass, scheduledSessions]);
+
+  const currentSessionData = useMemo(() => {
+    if (!selectedClass || !activeTab) return null;
+    
+    return selectedClass.attendance_sessions.find(r => {
+      const rDateStr = new Date(r.session_date).toISOString().split('T')[0];
+      const rTimeKey = r.start_time?.replace(/[^a-zA-Z0-9]/g, '') || '';
+      
+      if (activeTab === `session-${rDateStr}-${rTimeKey}`) return true;
+      
+      const sched = scheduledSessions.find(s => s.id === activeTab);
+      if (sched) {
+        const sDateStr = new Date(sched.date).toISOString().split('T')[0];
+        const sTimeKey = sched.startTime.replace(/[^a-zA-Z0-9]/g, '');
+        return rDateStr === sDateStr && rTimeKey === sTimeKey;
+      }
+      
+      return false;
+    });
+  }, [selectedClass, activeTab, scheduledSessions]);
+
+  const stats = useMemo(() => {
+    const total = selectedClass?.student_count || 0;
+    if (!currentSessionData) return { total, present: 0, absent: 0, lastUpdate: "Attendance Pending" };
+    
+    const filtered = currentSessionData.records.filter((r: any) => 
+      r.full_name && 
+      r.full_name.toLowerCase() !== "unknown" && 
+      !r.full_name.toLowerCase().includes("not registered") &&
+      r.student_id && r.student_id.toLowerCase() !== "unknown"
+    );
+
+    const present = filtered.filter(r => r.status === 'present').length;
+    const absent = filtered.filter(r => r.status === 'absent').length;
+    
+    // Use actual record timestamp instead of scheduled session date
+    const actualRecord = currentSessionData.records.find((r: any) => r.status === 'present') || currentSessionData.records[0];
+    const lastUpdate = actualRecord 
+      ? new Date(actualRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
+      : "Attendance Pending";
+
+    return { total, present, absent, lastUpdate };
+  }, [selectedClass, currentSessionData]);
 
   if (loading) {
     return (
@@ -215,18 +291,10 @@ export default function TeacherDashboardPage() {
     )
   }
 
-  const totalStudents = selectedClass?.student_count || 0
-  const latestSession = selectedClass?.attendance_sessions?.length 
-    ? selectedClass.attendance_sessions[selectedClass.attendance_sessions.length - 1] 
-    : null
-  
-  const presentStudents = latestSession 
-    ? latestSession.records.filter(r => r.status === 'present').length 
-    : 0
-
-  const lastUpdateTime = latestSession 
-    ? new Date(latestSession.session_date).toLocaleTimeString() 
-    : "No records yet"
+  const totalStudents = stats.total
+  const presentStudents = stats.present
+  const absentStudents = stats.absent
+  const lastUpdateTime = stats.lastUpdate
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
@@ -271,7 +339,7 @@ export default function TeacherDashboardPage() {
           <Dashboard
             totalStudents={totalStudents}
             presentStudents={presentStudents}
-            absentStudents={totalStudents - presentStudents}
+            absentStudents={absentStudents}
             lastUpdateTime={lastUpdateTime}
           />
 
@@ -347,12 +415,6 @@ export default function TeacherDashboardPage() {
 
                 <div className="p-6 flex-1">
                   {(() => {
-                    const scheduledSessions = generateScheduledSessions(
-                      selectedClass.start_date,
-                      selectedClass.end_date,
-                      selectedClass.schedule.schedule
-                    );
-
                     if (scheduledSessions.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center py-20 text-slate-500">
@@ -367,17 +429,8 @@ export default function TeacherDashboardPage() {
                       );
                     }
 
-                    // Find the default session (either the last recorded one or the first one)
-                    const lastRecordedSession = [...selectedClass.attendance_sessions].sort((a, b) => 
-                      new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
-                    )[0];
-
-                    const defaultVal = lastRecordedSession 
-                      ? `session-${new Date(lastRecordedSession.session_date).toISOString().split('T')[0]}-${lastRecordedSession.start_time?.replace(/[^a-zA-Z0-9]/g, '') || ''}`
-                      : scheduledSessions[0].id;
-
                     return (
-                      <Tabs defaultValue={defaultVal} className="w-full">
+                      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin">
                           <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl h-auto flex-nowrap w-max gap-2">
                             {scheduledSessions.map((session, idx) => {

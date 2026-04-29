@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { Play, Square, Camera, ListChecks, BookOpen, Loader2, AlertCircle } from "lucide-react"
+import { Play, Square, Camera, ListChecks, BookOpen, Loader2, AlertCircle, Image as ImageIcon } from "lucide-react"
 
 const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
@@ -109,21 +109,32 @@ export default function TeacherScannerPage() {
     }
   }, [selectedClass])
 
-  const captureAndRecognize = async () => {
+  const captureAndRecognize = async (file?: File) => {
     const currentSession = sessions.find(s => s.id === selectedSessionId)
-    if (!webcamRef.current || !selectedClassId || !currentSession) return
+    if (!selectedClassId || !currentSession) {
+      if (!selectedSessionId) alert("Please select a session first")
+      return
+    }
 
     setIsProcessing(true)
     try {
-      const imageSrc = webcamRef.current.getScreenshot()
-      if (!imageSrc) return
+      let blob: Blob;
+      let filename: string;
 
-      // Convert base64 to blob
-      const res = await fetch(imageSrc)
-      const blob = await res.blob()
+      if (file) {
+        blob = file;
+        filename = file.name;
+      } else {
+        if (!webcamRef.current) return;
+        const imageSrc = webcamRef.current.getScreenshot()
+        if (!imageSrc) return
+        const res = await fetch(imageSrc)
+        blob = await res.blob()
+        filename = "attendance.jpg"
+      }
       
       const formData = new FormData()
-      formData.append("file", blob, "attendance.jpg")
+      formData.append("file", blob, filename)
       formData.append("class_id", selectedClassId)
       // Send session info to prevent overwriting
       formData.append("session_date", currentSession.date)
@@ -206,16 +217,10 @@ export default function TeacherScannerPage() {
     if (!selectedClassId || !selectedSessionId || !selectedClass) return
     setIsRecording(true)
     setApprovalSuccess(false)
-    // In a real app, you might want to pulse every X seconds
-    const interval = setInterval(captureAndRecognize, 5000)
-    ;(window as any).attendanceInterval = interval
   }
 
   const stopAttendance = () => {
     setIsRecording(false)
-    if ((window as any).attendanceInterval) {
-      clearInterval((window as any).attendanceInterval)
-    }
   }
 
   if (loadingClasses) {
@@ -359,6 +364,23 @@ export default function TeacherScannerPage() {
             </div>
             <div className="p-6">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 aspect-video bg-black">
+                {/* Photo Import Icon */}
+                <div className="absolute top-4 right-4 z-20">
+                  <label className="cursor-pointer p-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white hover:bg-blue-600 hover:border-blue-500 transition-all backdrop-blur-md shadow-2xl flex items-center justify-center group" title="Import image from files">
+                    <ImageIcon size={20} className="group-hover:scale-110 transition-transform" />
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) captureAndRecognize(file)
+                        e.target.value = "" // Reset to allow re-uploading same file
+                      }}
+                    />
+                  </label>
+                </div>
+
                 <Webcam
                   audio={false}
                   ref={webcamRef}

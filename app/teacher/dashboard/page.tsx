@@ -64,6 +64,7 @@ export default function TeacherDashboardPage() {
     const fetchClasses = async () => {
       try {
         const token = localStorage.getItem("access_token")
+        if (!token) return
         const response = await fetch("http://127.0.0.1:8000/teacher/classes", {
           headers: {
             "Authorization": `Bearer ${token}`
@@ -72,9 +73,15 @@ export default function TeacherDashboardPage() {
         if (!response.ok) throw new Error("Failed to fetch classes")
         const data = await response.json()
         setClasses(data)
-        if (data.length > 0) {
-          setSelectedClass(data[0])
-        }
+        
+        setSelectedClass(prev => {
+          if (!prev && data.length > 0) return data[0];
+          if (prev) {
+            const updated = data.find((c: any) => c.id === prev.id);
+            return updated || data[0];
+          }
+          return null;
+        });
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -83,6 +90,8 @@ export default function TeacherDashboardPage() {
     }
 
     fetchClasses()
+    const interval = setInterval(fetchClasses, 10000) // Auto-refresh every 10s
+    return () => clearInterval(interval)
   }, [])
 
   const scheduledSessions = useMemo(() => {
@@ -141,7 +150,12 @@ export default function TeacherDashboardPage() {
 
     const present = filtered.filter(r => r.status === 'present').length;
     const absent = filtered.filter(r => r.status === 'absent').length;
-    const lastUpdate = new Date(currentSessionData.session_date).toLocaleTimeString();
+    
+    // Use actual record timestamp instead of scheduled session date
+    const actualRecord = currentSessionData.records.find((r: any) => r.status === 'present') || currentSessionData.records[0];
+    const lastUpdate = actualRecord 
+      ? new Date(actualRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
+      : "Attendance Pending";
 
     return { total, present, absent, lastUpdate };
   }, [selectedClass, currentSessionData]);

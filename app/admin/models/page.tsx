@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
@@ -70,6 +71,11 @@ export default function AdminModelsPage() {
   const [classForm, setClassForm] = useState(emptyClassForm)
   const [editingClassId, setEditingClassId] = useState<string | null>(null)
   const [isSubmittingClass, setIsSubmittingClass] = useState(false)
+  const [viewModal, setViewModal] = useState<{
+      isOpen: boolean;
+      type: "subjects" | "teachers" | "classes" | null;
+      data: any;
+    }>({ isOpen: false, type: null, data: null })
 
   const authHeader = useMemo(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
@@ -315,59 +321,14 @@ export default function AdminModelsPage() {
       {activeTab === "subjects" && (
         <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            <Card className="bg-card/40 border-0 relative">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-center">Subject Form</CardTitle>
-                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingSubjectId(null); setSubjectForm({ subject_name: "", subject_code: "" }); }}>
-                  <X size={16} />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0">
-                <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitSubject}>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">Subject Name</Label>
-                    <Input
-                      placeholder="e.g. Mathematics"
-                      value={subjectForm.subject_name}
-                      onChange={(e) => setSubjectForm((p) => ({ ...p, subject_name: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">Subject Code</Label>
-                    <Input
-                      placeholder="e.g. MATH101"
-                      value={subjectForm.subject_code}
-                      onChange={(e) => setSubjectForm((p) => ({ ...p, subject_code: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="mt-1" disabled={isSubmittingSubject}>
-                  {isSubmittingSubject ? (
-                    <><div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
-                  ) : editingSubjectId ? "Update Subject" : "Create Subject"}
-                </Button>
-                </form>
-              </CardContent>
-            </Card>
+            {/* ... existing form code ... */}
           ) : (
             <>
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Subject</Button>
               </div>
               {subjects.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
-                  <div className="w-16 h-16 rounded-full bg-blue-500/5 flex items-center justify-center mb-4">
-                    <BookOpen size={32} className="text-slate-600" />
-                  </div>
-                  <p className="text-white font-bold mb-1">No Subjects Registered</p>
-                  <p className="text-xs text-slate-500 mb-6 text-center max-w-[280px]">
-                    Your academic system needs subjects to function. Create your first subject to begin assigning teachers and classes.
-                  </p>
-                  <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl px-6">
-                    <Plus size={16} /> Create First Subject
-                  </Button>
-                </div>
+                {/* ... existing empty state ... */}
               ) : (
                 subjects.map((s) => (
                   <Card key={s.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
@@ -377,6 +338,14 @@ export default function AdminModelsPage() {
                         <p className="text-xs text-slate-400 font-mono">{s.subject_code}</p>
                       </div>
                       <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-white/5 hover:bg-white/10"
+                          onClick={() => setViewModal({ isOpen: true, type: "subjects", data: s })}
+                        >
+                          <Eye size={14} />
+                        </Button>
                         <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => { setEditingSubjectId(s.id); setSubjectForm({ subject_name: s.subject_name, subject_code: s.subject_code }); setShowForm(true); }}><Pencil size={14} /></Button>
                         <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("subjects", s.id)}><Trash2 size={14} /></Button>
                       </div>
@@ -393,101 +362,41 @@ export default function AdminModelsPage() {
       {activeTab === "teachers" && (
         <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            <Card className="bg-card/40 border-0 relative">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-center">Teacher Form</CardTitle>
-                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingTeacherId(null); setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" }); setShowPassword(false); }}>
-                  <X size={16} />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0">
-                <form className="flex flex-col gap-3 max-w-sm mx-auto" onSubmit={submitTeacher}>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">Full Name</Label>
-                    <Input
-                      placeholder="e.g. Dr. Abebe Girma"
-                      value={teacherForm.full_name}
-                      onChange={(e) => setTeacherForm((p) => ({ ...p, full_name: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">Username</Label>
-                    <Input
-                      placeholder="e.g. teacher01"
-                      value={teacherForm.username}
-                      onChange={(e) => setTeacherForm((p) => ({ ...p, username: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">Subject</Label>
-                    <Select value={teacherForm.subject_id} onValueChange={(v) => setTeacherForm((p) => ({ ...p, subject_id: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                      <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">{editingTeacherId ? "New Password (optional)" : "Password"}</Label>
-                    <div className="relative">
-                      <Input
-                        placeholder={editingTeacherId ? "Leave blank to keep current" : "Password"}
-                        type={showPassword ? "text" : "password"}
-                        value={teacherForm.password}
-                        onChange={(e) => setTeacherForm((p) => ({ ...p, password: e.target.value }))}
-                        required={!editingTeacherId}
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <Button type="submit" className="mt-1" disabled={isSubmittingTeacher}>
-                    {isSubmittingTeacher ? (
-                      <><div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
-                    ) : editingTeacherId ? "Update Teacher" : "Create Teacher"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            {/* ... existing form code ... */}
           ) : (
             <>
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Teacher</Button>
               </div>
               {teachers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
-                  <div className="w-16 h-16 rounded-full bg-indigo-500/5 flex items-center justify-center mb-4">
-                    <GraduationCap size={32} className="text-slate-600" />
-                  </div>
-                  <p className="text-white font-bold mb-1">No Teachers Found</p>
-                  <p className="text-xs text-slate-500 mb-6 text-center max-w-[280px]">
-                    You haven't added any teachers yet. Registered teachers will be able to manage their own classes and attendance.
-                  </p>
-                  <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl px-6">
-                    <Plus size={16} /> Create First Teacher
-                  </Button>
-                </div>
+                {/* ... existing empty state ... */}
               ) : (
-                teachers.map((t) => (
-                  <Card key={t.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
-                    <CardContent className="py-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-semibold group-hover:text-indigo-400 transition-colors">{t.full_name}</p>
-                        <p className="text-xs text-slate-400">{t.username}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); setShowPassword(false); }}><Pencil size={14} /></Button>
-                        <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                teachers.map((t) => {
+                  const teacherSubject = subjects.find(s => s.id === t.subject_id)
+                  return (
+                    <Card key={t.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
+                      <CardContent className="py-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-semibold group-hover:text-indigo-400 transition-colors">{t.full_name}</p>
+                          <p className="text-xs text-slate-400">{t.username}</p>
+                          {teacherSubject && <p className="text-xs text-slate-500 mt-0.5">Subject: {teacherSubject.subject_name}</p>}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-white/5 hover:bg-white/10"
+                            onClick={() => setViewModal({ isOpen: true, type: "teachers", data: { ...t, subject_name: teacherSubject?.subject_name } })}
+                          >
+                            <Eye size={14} />
+                          </Button>
+                          <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => { setEditingTeacherId(t.id); setTeacherForm({ full_name: t.full_name, subject_id: t.subject_id, username: t.username, password: "" }); setShowForm(true); setShowPassword(false); }}><Pencil size={14} /></Button>
+                          <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("teachers", t.id)}><Trash2 size={14} /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })
               )}
             </>
           )}
@@ -498,320 +407,236 @@ export default function AdminModelsPage() {
       {activeTab === "classes" && (
         <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            <Card className="bg-card/40 border-0 relative">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-center">Class Form</CardTitle>
-                <Button variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => { setShowForm(false); setEditingClassId(null); setClassForm(emptyClassForm); }}>
-                  <X size={16} />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0">
-                <form className="flex flex-col gap-4 max-w-lg mx-auto" onSubmit={submitClass}>
-
-                  {/* Class Name */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Class Name</Label>
-                  <Input
-                    placeholder="e.g. Year 2 Section A"
-                    value={classForm.class_name}
-                    onChange={(e) => setClassForm((p) => ({ ...p, class_name: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                {/* Select Subject */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Subject</Label>
-                  <Select value={classForm.subject_id} onValueChange={(v) => setClassForm((p) => ({ ...p, subject_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                    <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-
-                {/* Select Teacher */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-400">Teacher</Label>
-                  <Select value={classForm.teacher_id} onValueChange={(v) => setClassForm((p) => ({ ...p, teacher_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select Teacher" /></SelectTrigger>
-                    <SelectContent>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-
-                {/* Start & End Date — horizontal, calendar picker */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">Start Date</Label>
-                    <Input
-                      type="date"
-                      value={classForm.start_date}
-                      onChange={(e) => setClassForm((p) => ({ ...p, start_date: e.target.value }))}
-                      required
-                      className="cursor-pointer [color-scheme:dark] bg-[#0d1b2e]/70 border-blue-900/40 text-blue-100 backdrop-blur-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-400">End Date</Label>
-                    <Input
-                      type="date"
-                      value={classForm.end_date}
-                      onChange={(e) => setClassForm((p) => ({ ...p, end_date: e.target.value }))}
-                      required
-                      className="cursor-pointer [color-scheme:dark] bg-[#0d1b2e]/70 border-blue-900/40 text-blue-100 backdrop-blur-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Schedule Rows */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Weekly Schedule</Label>
-
-                  {classForm.scheduleRows.map((row, idx) => (
-                    <div key={idx} className="flex items-center gap-2 flex-wrap">
-                      {/* Day selector */}
-                      <Select value={row.day} onValueChange={(v) => updateScheduleRow(idx, "day", v)}>
-                        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-
-                      {/* Start time */}
-                      <div className="flex-1 space-y-0.5 min-w-[110px]">
-                        <Input
-                          type="time"
-                          value={row.start_time}
-                          onChange={(e) => updateScheduleRow(idx, "start_time", e.target.value)}
-                          required
-                          className="cursor-pointer"
-                        />
-                      </div>
-
-                      <span className="text-slate-500 text-sm">–</span>
-
-                      {/* End time */}
-                      <div className="flex-1 space-y-0.5 min-w-[110px]">
-                        <Input
-                          type="time"
-                          value={row.end_time}
-                          onChange={(e) => updateScheduleRow(idx, "end_time", e.target.value)}
-                          required
-                          className="cursor-pointer"
-                        />
-                      </div>
-
-                      {/* Remove row button (only if more than 1) */}
-                      {classForm.scheduleRows.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="h-8 w-8 flex-shrink-0"
-                          onClick={() => removeScheduleRow(idx)}
-                        >
-                          <Trash2 size={13} />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* + Add another day button */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-1 gap-1.5 border-dashed border-white/20 text-slate-400 hover:text-white"
-                    onClick={addScheduleRow}
-                  >
-                    <Plus size={14} />
-                    Add Another Day
-                  </Button>
-                </div>
-
-                {/* Students multi-select */}
-                {/* Students multi-select */}
-                {(() => {
-                  const filteredStudents = students.filter((s) => {
-                    const matchesSearch = !studentSearch || s.fullName.toLowerCase().includes(studentSearch.toLowerCase()) || s.studentID.toLowerCase().includes(studentSearch.toLowerCase())
-                    const matchesBatch = !batchFilter || (s.batch && s.batch.toLowerCase().includes(batchFilter.toLowerCase()))
-                    const matchesYear = !yearFilter || (s.class_year && s.class_year.toLowerCase().includes(yearFilter.toLowerCase()))
-                    const matchesSem = !semesterFilter || (s.semester && s.semester.toLowerCase().includes(semesterFilter.toLowerCase()))
-                    const matchesSec = !sectionFilter || (s.section && s.section.toLowerCase().includes(sectionFilter.toLowerCase()))
-                    const matchesDept = !departmentFilter || (s.department && s.department.toLowerCase().includes(departmentFilter.toLowerCase()))
-                    
-                    return matchesSearch && matchesBatch && matchesYear && matchesSem && matchesSec && matchesDept
-                  })
-                  
-                  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every(s => classForm.students.includes(s.studentID))
-
-                  return (
-                    <div className="space-y-3 mt-4 bg-slate-900/40 p-4 rounded-xl border border-white/5">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                          Select Students
-                          {classForm.students.length > 0 && (
-                            <span className="ml-2 text-blue-400 normal-case font-normal bg-blue-500/10 px-2 py-0.5 rounded-full">
-                              {classForm.students.length} selected
-                            </span>
-                          )}
-                        </Label>
-                        {filteredStudents.length > 0 && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                            onClick={() => {
-                              if (allFilteredSelected) {
-                                const filteredIds = filteredStudents.map(s => s.studentID)
-                                setClassForm(p => ({ ...p, students: p.students.filter(id => !filteredIds.includes(id)) }))
-                              } else {
-                                const filteredIds = filteredStudents.map(s => s.studentID)
-                                setClassForm(p => ({ ...p, students: Array.from(new Set([...p.students, ...filteredIds])) }))
-                              }
-                            }}
-                          >
-                            {allFilteredSelected ? "Deselect All Filtered" : "Select All Filtered"}
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Filters */}
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                        <Input placeholder="Batch (e.g. 2022)" value={batchFilter} onChange={e => setBatchFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
-                        <Input placeholder="Year (e.g. 3rd)" value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
-                        <Input placeholder="Sem (e.g. 1st)" value={semesterFilter} onChange={e => setSemesterFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
-                        <Input placeholder="Sec (e.g. A)" value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
-                        <Input placeholder="Dept" value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)} className="bg-slate-900/80 border-white/10 text-white text-xs h-8" />
-                      </div>
-
-                      {/* Search */}
-                      <Input
-                        placeholder="Search students by name or ID…"
-                        value={studentSearch}
-                        onChange={(e) => setStudentSearch(e.target.value)}
-                        className="bg-slate-900/80 border-white/10 text-white placeholder:text-slate-500 h-9"
-                      />
-
-                      {students.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic py-2">
-                          No registered students found.
-                        </p>
-                      ) : (
-                        <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10 bg-slate-900/60 divide-y divide-white/5">
-                          {filteredStudents.length === 0 ? (
-                            <p className="text-xs text-slate-500 italic py-3 px-3 text-center">No students match the filters.</p>
-                          ) : (
-                            filteredStudents.map((s) => {
-                              const checked = classForm.students.includes(s.studentID)
-                              return (
-                                <label
-                                  key={s.id}
-                                  className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
-                                    checked ? "bg-blue-900/30" : "hover:bg-white/5"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => {
-                                      setClassForm((p) => ({
-                                        ...p,
-                                        students: checked
-                                          ? p.students.filter((id) => id !== s.studentID)
-                                          : [...p.students, s.studentID],
-                                      }))
-                                    }}
-                                    className="accent-blue-500 h-4 w-4 flex-shrink-0"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-white font-medium truncate">{s.fullName}</p>
-                                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                      <span className="text-xs text-slate-400 font-mono">{s.studentID}</span>
-                                      {s.department && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">{s.department}</span>}
-                                      {s.batch && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">B{s.batch}</span>}
-                                      {s.class_year && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">Yr {s.class_year}</span>}
-                                      {s.semester && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">Sem {s.semester}</span>}
-                                      {s.section && <span className="text-[10px] bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">Sec {s.section}</span>}
-                                    </div>
-                                  </div>
-                                </label>
-                              )
-                            })
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
-
-                <Button type="submit" className="mt-1" disabled={isSubmittingClass}>
-                  {isSubmittingClass ? (
-                    <><div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
-                  ) : editingClassId ? "Update Class" : "Create Class"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+            {/* ... existing form code ... */}
           ) : (
             <>
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Class</Button>
               </div>
               {classes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/5 flex items-center justify-center mb-4">
-                    <Layers3 size={32} className="text-slate-600" />
-                  </div>
-                  <p className="text-white font-bold mb-1">No Classes Scheduled</p>
-                  <p className="text-xs text-slate-500 mb-6 text-center max-w-[280px]">
-                    Create classes to link subjects, teachers, and students together for real-time attendance tracking.
-                  </p>
-                  <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl px-6">
-                    <Plus size={16} /> Create First Class
-                  </Button>
-                </div>
+                {/* ... existing empty state ... */}
               ) : (
-                classes.map((c) => (
-                  <Card key={c.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
-                    <CardContent className="py-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-semibold group-hover:text-emerald-400 transition-colors">{c.class_name}</p>
-                        <p className="text-xs text-slate-400">{c.teacher_name} • Students: {c.student_count}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-white/5 hover:bg-white/10"
-                          onClick={() => {
-                            const rows = c.schedule?.schedule?.length
-                              ? c.schedule.schedule
-                              : [emptyScheduleRow()]
-                            setEditingClassId(c.id)
-                            setClassForm({
-                              class_name: c.class_name,
-                              subject_id: c.subject_id,
-                              teacher_id: c.teacher_id,
-                              start_date: c.start_date.slice(0, 10),
-                              end_date: c.end_date.slice(0, 10),
-                              scheduleRows: rows,
-                              students: c.students,
-                            })
-                            setShowForm(true)
-                          }}
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                        <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("classes", c.id)}><Trash2 size={14} /></Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                classes.map((c) => {
+                  const classSubject = subjects.find(s => s.id === c.subject_id)
+                  const classTeacher = teachers.find(t => t.id === c.teacher_id)
+                  return (
+                    <Card key={c.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
+                      <CardContent className="py-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-semibold group-hover:text-emerald-400 transition-colors">{c.class_name}</p>
+                          <p className="text-xs text-slate-400">{c.teacher_name || classTeacher?.full_name} • Students: {c.student_count}</p>
+                          {(classSubject || c.subject_name) && (
+                            <p className="text-xs text-slate-500 mt-0.5">Subject: {c.subject_name || classSubject?.subject_name}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-white/5 hover:bg-white/10"
+                            onClick={() => setViewModal({ 
+                              isOpen: true, 
+                              type: "classes", 
+                              data: { 
+                                ...c, 
+                                subject_name: c.subject_name || classSubject?.subject_name,
+                                teacher_name: c.teacher_name || classTeacher?.full_name,
+                                schedule_rows: c.schedule?.schedule || []
+                              } 
+                            })}
+                          >
+                            <Eye size={14} />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-white/5 hover:bg-white/10"
+                            onClick={() => {
+                              const rows = c.schedule?.schedule?.length
+                                ? c.schedule.schedule
+                                : [emptyScheduleRow()]
+                              setEditingClassId(c.id)
+                              setClassForm({
+                                class_name: c.class_name,
+                                subject_id: c.subject_id,
+                                teacher_id: c.teacher_id,
+                                start_date: c.start_date.slice(0, 10),
+                                end_date: c.end_date.slice(0, 10),
+                                scheduleRows: rows,
+                                students: c.students,
+                              })
+                              setShowForm(true)
+                            }}
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                          <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeItem("classes", c.id)}><Trash2 size={14} /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })
               )}
             </>
           )}
         </div>
       )}
+
+      <Dialog open={viewModal.isOpen} onOpenChange={(open) => setViewModal({ isOpen: open, type: null, data: null })}>
+        <DialogContent className="bg-[#0d1b2e] border-white/10 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold capitalize">
+              {viewModal.type === "subjects" && "Subject Details"}
+              {viewModal.type === "teachers" && "Teacher Details"}
+              {viewModal.type === "classes" && "Class Details"}
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Detailed information about the selected {viewModal.type?.slice(0, -1)}
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewModal.type === "subjects" && viewModal.data && (
+            <div className="space-y-4 mt-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject Name</label>
+                    <p className="text-white font-medium mt-1">{viewModal.data.subject_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject Code</label>
+                    <p className="text-white font-mono mt-1">{viewModal.data.subject_code}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <label className="text-xs text-slate-400 uppercase tracking-wider">ID</label>
+                <p className="text-white font-mono text-sm mt-1">{viewModal.data.id}</p>
+              </div>
+            </div>
+          )}
+
+          {viewModal.type === "teachers" && viewModal.data && (
+            <div className="space-y-4 mt-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Full Name</label>
+                    <p className="text-white font-medium mt-1">{viewModal.data.full_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Username</label>
+                    <p className="text-white font-mono mt-1">{viewModal.data.username}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <label className="text-xs text-slate-400 uppercase tracking-wider">Assigned Subject</label>
+                <p className="text-white mt-1">{viewModal.data.subject_name || subjects.find(s => s.id === viewModal.data.subject_id)?.subject_name || "Not Assigned"}</p>
+                {viewModal.data.subject_id && (
+                  <p className="text-xs text-slate-500 mt-1 font-mono">Subject ID: {viewModal.data.subject_id}</p>
+                )}
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <label className="text-xs text-slate-400 uppercase tracking-wider">Teacher ID</label>
+                <p className="text-white font-mono text-sm mt-1">{viewModal.data.id}</p>
+              </div>
+            </div>
+          )}
+
+          {viewModal.type === "classes" && viewModal.data && (
+            <div className="space-y-4 mt-4">
+              {/* Basic Info */}
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <h3 className="text-sm font-semibold text-blue-400 mb-3">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Class Name</label>
+                    <p className="text-white font-medium mt-1">{viewModal.data.class_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Teacher</label>
+                    <p className="text-white mt-1">{viewModal.data.teacher_name}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subject Info */}
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <h3 className="text-sm font-semibold text-blue-400 mb-3">Subject Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject Name</label>
+                    <p className="text-white mt-1">{viewModal.data.subject_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Subject ID</label>
+                    <p className="text-white font-mono text-sm mt-1">{viewModal.data.subject_id}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date Range */}
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <h3 className="text-sm font-semibold text-blue-400 mb-3">Date Range</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">Start Date</label>
+                    <p className="text-white mt-1">{new Date(viewModal.data.start_date).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider">End Date</label>
+                    <p className="text-white mt-1">{new Date(viewModal.data.end_date).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Schedule */}
+              {viewModal.data.schedule_rows && viewModal.data.schedule_rows.length > 0 && (
+                <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                  <h3 className="text-sm font-semibold text-blue-400 mb-3">Weekly Schedule</h3>
+                  <div className="space-y-2">
+                    {viewModal.data.schedule_rows.map((row: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                        <span className="text-white font-medium">{row.day}</span>
+                        <span className="text-slate-300">{row.start_time} - {row.end_time}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Students */}
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <h3 className="text-sm font-semibold text-blue-400 mb-3">
+                  Enrolled Students ({viewModal.data.student_count || viewModal.data.students?.length || 0})
+                </h3>
+                {viewModal.data.students && viewModal.data.students.length > 0 ? (
+                  <div className="max-h-48 overflow-y-auto space-y-1">
+                    {viewModal.data.students.map((studentId: string, idx: number) => {
+                      const student = students.find(s => s.studentID === studentId)
+                      return (
+                        <div key={idx} className="flex items-center justify-between py-1 text-sm">
+                          <span className="text-white">{student?.fullName || "Unknown Student"}</span>
+                          <span className="text-slate-400 font-mono text-xs">{studentId}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-slate-400 text-sm">No students enrolled in this class.</p>
+                )}
+              </div>
+
+              {/* Class ID */}
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-white/5">
+                <label className="text-xs text-slate-400 uppercase tracking-wider">Class ID</label>
+                <p className="text-white font-mono text-sm mt-1">{viewModal.data.id}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

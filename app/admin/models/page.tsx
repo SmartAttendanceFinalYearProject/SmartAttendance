@@ -363,14 +363,33 @@ export default function AdminModelsPage() {
       {activeTab === "subjects" && (
         <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            {/* ... existing form code ... */}
+            <Card className="bg-card/30 border-white/5 p-6">
+              <form onSubmit={submitSubject} className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">{editingSubjectId ? "Edit" : "Create"} Subject</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="subject_name">Subject Name</Label>
+                  <Input id="subject_name" value={subjectForm.subject_name} onChange={(e) => setSubjectForm({ ...subjectForm, subject_name: e.target.value })} placeholder="e.g., Artificial Intelligence" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subject_code">Subject Code</Label>
+                  <Input id="subject_code" value={subjectForm.subject_code} onChange={(e) => setSubjectForm({ ...subjectForm, subject_code: e.target.value })} placeholder="e.g., CS-401" required />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={() => { setShowForm(false); setEditingSubjectId(null); setSubjectForm({ subject_name: "", subject_code: "" }); }}>Cancel</Button>
+                  <Button type="submit" disabled={isSubmittingSubject}>{isSubmittingSubject ? "Saving..." : "Save Subject"}</Button>
+                </div>
+              </form>
+            </Card>
           ) : (
             <>
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Subject</Button>
               </div>
               {subjects.length === 0 ? (
-                {/* ... existing empty state ... */}
+                <div className="text-center py-12 rounded-3xl border border-dashed border-white/10 bg-white/5">
+                  <Users size={32} className="mx-auto text-slate-600 mb-2 opacity-20" />
+                  <p className="text-slate-500 text-sm">No subjects currently available.</p>
+                </div>
               ) : (
                 subjects.map((s) => (
                   <Card key={s.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
@@ -404,14 +423,51 @@ export default function AdminModelsPage() {
       {activeTab === "teachers" && (
         <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            {/* ... existing form code ... */}
+            <Card className="bg-card/30 border-white/5 p-6">
+              <form onSubmit={submitTeacher} className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">{editingTeacherId ? "Edit" : "Create"} Teacher</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input id="full_name" value={teacherForm.full_name} onChange={(e) => setTeacherForm({ ...teacherForm, full_name: e.target.value })} placeholder="e.g., Dr. Alan Turing" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input id="username" value={teacherForm.username} onChange={(e) => setTeacherForm({ ...teacherForm, username: e.target.value })} placeholder="e.g., alan.t" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password {editingTeacherId && "(leave blank to keep current)"}</Label>
+                  <div className="relative">
+                    <Input id="password" type={showPassword ? "text" : "password"} value={teacherForm.password} onChange={(e) => setTeacherForm({ ...teacherForm, password: e.target.value })} placeholder="••••••••" required={!editingTeacherId} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 text-slate-400">
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subject_id">Subject</Label>
+                  <Select value={teacherForm.subject_id} onValueChange={(value) => setTeacherForm({ ...teacherForm, subject_id: value })}>
+                    <SelectTrigger><SelectValue placeholder="Assign a subject" /></SelectTrigger>
+                    <SelectContent>
+                      {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={() => { setShowForm(false); setEditingTeacherId(null); setTeacherForm({ full_name: "", subject_id: "", username: "", password: "" }); }}>Cancel</Button>
+                  <Button type="submit" disabled={isSubmittingTeacher}>{isSubmittingTeacher ? "Saving..." : "Save Teacher"}</Button>
+                </div>
+              </form>
+            </Card>
           ) : (
             <>
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Teacher</Button>
               </div>
               {teachers.length === 0 ? (
-                {/* ... existing empty state ... */}
+                <div className="text-center py-12 rounded-3xl border border-dashed border-white/10 bg-white/5">
+                  <Users size={32} className="mx-auto text-slate-600 mb-2 opacity-20" />
+                  <p className="text-slate-500 text-sm">No teachers currently available.</p>
+                </div>
               ) : (
                 teachers.map((t) => {
                   const teacherSubject = subjects.find(s => s.id === t.subject_id)
@@ -428,7 +484,14 @@ export default function AdminModelsPage() {
                             variant="outline" 
                             size="sm" 
                             className="border-white/5 hover:bg-white/10"
-                            onClick={() => setViewModal({ isOpen: true, type: "teachers", data: { ...t, subject_name: teacherSubject?.subject_name } })}
+                            onClick={() => setViewModal({ 
+                              isOpen: true, 
+                              type: "teachers", 
+                              data: { 
+                                ...t, 
+                                subject_name: teacherSubject?.subject_name 
+                              } 
+                            })}
                           >
                             <Eye size={14} />
                           </Button>
@@ -449,14 +512,81 @@ export default function AdminModelsPage() {
       {activeTab === "classes" && (
         <div className="space-y-4 max-w-2xl mx-auto">
           {showForm ? (
-            {/* ... existing form code ... */}
+            <Card className="bg-card/30 border-white/5 p-6">
+              <form onSubmit={submitClass} className="space-y-6">
+                <h3 className="text-lg font-semibold text-white">{editingClassId ? "Edit" : "Create"} Class</h3>
+
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="class_name">Class Name</Label>
+                    <Input id="class_name" value={classForm.class_name} onChange={(e) => setClassForm({ ...classForm, class_name: e.target.value })} placeholder="e.g., Fall Semester AI" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subject_id">Subject</Label>
+                    <Select value={classForm.subject_id} onValueChange={(value) => setClassForm({ ...classForm, subject_id: value })}>
+                      <SelectTrigger><SelectValue placeholder="Select a subject" /></SelectTrigger>
+                      <SelectContent>
+                        {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="teacher_id">Teacher</Label>
+                    <Select value={classForm.teacher_id} onValueChange={(value) => setClassForm({ ...classForm, teacher_id: value })}>
+                      <SelectTrigger><SelectValue placeholder="Assign a teacher" /></SelectTrigger>
+                      <SelectContent>
+                        {teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start_date">Start Date</Label>
+                    <Input id="start_date" type="date" value={classForm.start_date} onChange={(e) => setClassForm({ ...classForm, start_date: e.target.value })} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end_date">End Date</Label>
+                    <Input id="end_date" type="date" value={classForm.end_date} onChange={(e) => setClassForm({ ...classForm, end_date: e.target.value })} required />
+                  </div>
+                </div>
+
+                {/* Schedule */}
+                <div className="space-y-3">
+                  <Label>Weekly Schedule</Label>
+                  {classForm.scheduleRows.map((row, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Select value={row.day} onValueChange={(v) => updateScheduleRow(index, "day", v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Input type="time" value={row.start_time} onChange={(e) => updateScheduleRow(index, "start_time", e.target.value)} />
+                      <Input type="time" value={row.end_time} onChange={(e) => updateScheduleRow(index, "end_time", e.target.value)} />
+                      <Button type="button" variant="destructive" size="sm" onClick={() => removeScheduleRow(index)}><Trash2 size={14} /></Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={addScheduleRow} className="gap-2"><Plus size={14} /> Add Session</Button>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={() => { setShowForm(false); setEditingClassId(null); setClassForm(emptyClassForm); }}>Cancel</Button>
+                  <Button type="submit" disabled={isSubmittingClass}>{isSubmittingClass ? "Saving..." : "Save Class"}</Button>
+                </div>
+              </form>
+            </Card>
           ) : (
             <>
               <div className="flex justify-end mb-2">
                 <Button onClick={() => setShowForm(true)} className="gap-2"><Plus size={16} /> Create Class</Button>
               </div>
               {classes.length === 0 ? (
-                {/* ... existing empty state ... */}
+                <div className="text-center py-12 rounded-3xl border border-dashed border-white/10 bg-white/5">
+                  <Users size={32} className="mx-auto text-slate-600 mb-2 opacity-20" />
+                  <p className="text-slate-500 text-sm">No classes currently available.</p>
+                </div>
               ) : (
                 classes.map((c) => {
                   const classSubject = subjects.find(s => s.id === c.subject_id)

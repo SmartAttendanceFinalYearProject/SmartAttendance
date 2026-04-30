@@ -109,7 +109,8 @@ export default function TeacherScannerPage() {
     }
   }, [selectedClass])
 
-  const captureAndRecognize = async (file?: File) => {
+  const captureAndRecognize = async (fileOrEvent?: File | React.MouseEvent) => {
+    const file = fileOrEvent instanceof File ? fileOrEvent : undefined;
     const currentSession = sessions.find(s => s.id === selectedSessionId)
     if (!selectedClassId || !currentSession) {
       if (!selectedSessionId) alert("Please select a session first")
@@ -118,23 +119,31 @@ export default function TeacherScannerPage() {
 
     setIsProcessing(true)
     try {
-      let blob: Blob;
+      let imageBlob: Blob;
       let filename: string;
 
       if (file) {
-        blob = file;
+        imageBlob = file;
         filename = file.name;
       } else {
         if (!webcamRef.current) return;
         const imageSrc = webcamRef.current.getScreenshot()
         if (!imageSrc) return
-        const res = await fetch(imageSrc)
-        blob = await res.blob()
+        
+        // Manual conversion of base64 to Blob to ensure compatibility
+        const byteString = atob(imageSrc.split(',')[1]);
+        const mimeString = imageSrc.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        imageBlob = new Blob([ab], { type: mimeString });
         filename = "attendance.jpg"
       }
       
       const formData = new FormData()
-      formData.append("file", blob, filename)
+      formData.append("file", imageBlob, filename)
       formData.append("class_id", selectedClassId)
       // Send session info to prevent overwriting
       formData.append("session_date", currentSession.date)
@@ -420,7 +429,7 @@ export default function TeacherScannerPage() {
                 )}
                 
                 <Button
-                  onClick={captureAndRecognize}
+                  onClick={() => captureAndRecognize()}
                   disabled={!isRecording || isProcessing}
                   variant="outline"
                   className="h-14 border-white/10 bg-white/5 text-white font-bold gap-3 px-8 rounded-2xl hover:bg-white/10 disabled:opacity-50 transition-all"

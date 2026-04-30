@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import dynamic from "next/dynamic"
-import { ListChecks, BookOpen, Users, Calendar, Clock, ChevronRight, Loader2 } from "lucide-react"
+import { ListChecks, BookOpen, Users, Calendar, Clock, ChevronRight, Loader2, FileSpreadsheet, Download } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { utils, writeFile } from "xlsx"
 
 const Dashboard = dynamic(() => import("@/components/Dashboard"), {
   loading: () => <div className="h-32 w-full animate-pulse bg-white/5 rounded-2xl" />,
@@ -35,6 +36,8 @@ interface AttendanceRecord {
 interface AttendanceSession {
   id: string;
   session_date: string;
+  start_time?: string;
+  end_time?: string;
   records: AttendanceRecord[];
 }
 
@@ -59,6 +62,67 @@ export default function TeacherDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>("")
+  const prevClassIdRef = useRef<string | null>(null)
+
+  const handleExportExcel = () => {
+    if (!selectedClass || selectedClass.attendance_sessions.length === 0) return;
+
+    // 1. Prepare Sessions (Columns) - Sort by date
+    const sortedSessions = [...selectedClass.attendance_sessions].sort((a, b) => 
+      new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
+    );
+
+    // 2. Prepare Rows (Students)
+    const data = selectedClass.student_details.map(student => {
+      const row: any = {
+        "Student Name": student.fullName,
+        "Student ID": student.studentID
+      };
+
+      let presentCount = 0;
+      sortedSessions.forEach((session, index) => {
+        const record = session.records.find(r => 
+          r.student_id === student.id || r.student_id === student.studentID
+        );
+        
+        const status = record ? record.status : "absent"; // If no record, they were absent or pending
+        if (status === 'present') presentCount++;
+        
+        const dateStr = new Date(session.session_date).toLocaleDateString();
+        const timeStr = session.start_time ? ` (${session.start_time})` : "";
+        const columnHeader = `${dateStr}${timeStr}`;
+        
+        row[columnHeader] = status.toUpperCase();
+      });
+
+      row["Total Present"] = presentCount;
+      row["Total Sessions"] = sortedSessions.length;
+      row["Attendance %"] = ((presentCount / sortedSessions.length) * 100).toFixed(1) + "%";
+
+      return row;
+    });
+
+    // 3. Create Workbook & Worksheet
+    const worksheet = utils.json_to_sheet(data);
+    
+    // Set column widths for better readability
+    const wscols = [
+      { wch: 25 }, // Student Name
+      { wch: 15 }, // Student ID
+      ...sortedSessions.map(() => ({ wch: 15 })), // Session columns
+      { wch: 15 }, // Total Present
+      { wch: 15 }, // Total Sessions
+      { wch: 15 }, // Attendance %
+    ];
+    worksheet["!cols"] = wscols;
+
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "Attendance Report");
+
+    // 4. Download file
+    const fileName = `${selectedClass.class_name.replace(/[^a-z0-9]/gi, '_')}_Full_Attendance_Report.xlsx`;
+    writeFile(workbook, fileName);
+  };
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -105,17 +169,21 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => {
     if (selectedClass && scheduledSessions.length > 0) {
-      const lastRecordedSession = [...selectedClass.attendance_sessions].sort((a, b) => 
-        new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
-      )[0];
+      // Only set the default tab if the class ID has changed or if no tab is active
+      if (selectedClass.id !== prevClassIdRef.current || !activeTab) {
+        const lastRecordedSession = [...selectedClass.attendance_sessions].sort((a, b) => 
+          new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+        )[0];
 
-      const defaultVal = lastRecordedSession 
-        ? `session-${new Date(lastRecordedSession.session_date).toISOString().split('T')[0]}-${lastRecordedSession.start_time?.replace(/[^a-zA-Z0-9]/g, '') || ''}`
-        : scheduledSessions[0].id;
-      
-      setActiveTab(defaultVal);
+        const defaultVal = lastRecordedSession 
+          ? `session-${new Date(lastRecordedSession.session_date).toISOString().split('T')[0]}-${lastRecordedSession.start_time?.replace(/[^a-zA-Z0-9]/g, '') || ''}`
+          : scheduledSessions[0].id;
+        
+        setActiveTab(defaultVal);
+        prevClassIdRef.current = selectedClass.id;
+      }
     }
-  }, [selectedClass, scheduledSessions]);
+  }, [selectedClass, scheduledSessions, activeTab]);
 
   const currentSessionData = useMemo(() => {
     if (!selectedClass || !activeTab) return null;
@@ -406,11 +474,22 @@ export default function TeacherDashboardPage() {
                     <ListChecks size={18} className="text-blue-400" />
                     <h3 className="text-lg font-bold text-white">Attendance History</h3>
                   </div>
-                  {selectedClass.attendance_sessions.length > 0 && (
-                    <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
-                      {selectedClass.attendance_sessions.length} SESSIONS RECORDED
-                    </span>
-                  )}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    {selectedClass.attendance_sessions.length > 0 && (
+                      <>
+                        <button
+                          onClick={handleExportExcel}
+                          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold transition-all"
+                        >
+                          <FileSpreadsheet size={14} />
+                          Export All Sessions
+                        </button>
+                        <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
+                          {selectedClass.attendance_sessions.length} SESSIONS RECORDED
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="p-6 flex-1">

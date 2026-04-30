@@ -150,10 +150,10 @@ export default function AdminAnalyticsPage() {
                   <div className="relative w-full flex-1 flex items-end group cursor-pointer">
                     {/* The Bar */}
                     <div 
-                      className={`w-full rounded-t-md transition-all duration-500 ease-out group-hover:brightness-125 ${
-                        data.rate > 90 ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]' : 
-                        data.rate > 70 ? 'bg-emerald-500/70' : 
-                        data.rate > 0 ? 'bg-emerald-600/40' : 'bg-white/5'
+                      className={`w-5 mx-auto rounded-t-full transition-all duration-500 ease-out group-hover:brightness-110 ${
+                        data.rate > 90 ? 'bg-emerald-700 shadow-[0_0_10px_rgba(4,120,87,0.2)]' : 
+                        data.rate > 70 ? 'bg-emerald-800' : 
+                        data.rate > 0 ? 'bg-emerald-900' : 'bg-white/5'
                       }`}
                       style={{ height: `${Math.max(data.rate, 4)}%` }}
                     />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import dynamic from "next/dynamic"
 import { ListChecks, BookOpen, Users, Calendar, Clock, ChevronRight, Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -59,6 +59,7 @@ export default function TeacherDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>("")
+  const prevClassIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -105,17 +106,21 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => {
     if (selectedClass && scheduledSessions.length > 0) {
-      const lastRecordedSession = [...selectedClass.attendance_sessions].sort((a, b) => 
-        new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
-      )[0];
+      // Only set the default tab if the class ID has changed or if no tab is active
+      if (selectedClass.id !== prevClassIdRef.current || !activeTab) {
+        const lastRecordedSession = [...selectedClass.attendance_sessions].sort((a, b) => 
+          new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+        )[0];
 
-      const defaultVal = lastRecordedSession 
-        ? `session-${new Date(lastRecordedSession.session_date).toISOString().split('T')[0]}-${lastRecordedSession.start_time?.replace(/[^a-zA-Z0-9]/g, '') || ''}`
-        : scheduledSessions[0].id;
-      
-      setActiveTab(defaultVal);
+        const defaultVal = lastRecordedSession 
+          ? `session-${new Date(lastRecordedSession.session_date).toISOString().split('T')[0]}-${lastRecordedSession.start_time?.replace(/[^a-zA-Z0-9]/g, '') || ''}`
+          : scheduledSessions[0].id;
+        
+        setActiveTab(defaultVal);
+        prevClassIdRef.current = selectedClass.id;
+      }
     }
-  }, [selectedClass, scheduledSessions]);
+  }, [selectedClass, scheduledSessions, activeTab]);
 
   const currentSessionData = useMemo(() => {
     if (!selectedClass || !activeTab) return null;

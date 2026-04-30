@@ -144,23 +144,27 @@ export default function AdminAnalyticsPage() {
             </select>
           </CardHeader>
           <CardContent>
-            <div className="h-64 flex items-end justify-between gap-2 px-4 pb-4">
+            <div className="h-64 flex items-stretch justify-between gap-3 px-2 pb-2">
               {weeklyData.map((data, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                  <div className="relative w-full group">
+                <div key={i} className="flex-1 flex flex-col items-center">
+                  <div className="relative w-full flex-1 flex items-end group cursor-pointer">
+                    {/* The Bar */}
                     <div 
-                      className={`w-full rounded-t-lg transition-all duration-500 ease-out group-hover:brightness-125 ${
-                        data.rate > 90 ? 'bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 
-                        data.rate > 70 ? 'bg-blue-500/60' : 
-                        data.rate > 0 ? 'bg-blue-400/40' : 'bg-slate-700/30'
+                      className={`w-full rounded-t-md transition-all duration-500 ease-out group-hover:brightness-125 ${
+                        data.rate > 90 ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]' : 
+                        data.rate > 70 ? 'bg-emerald-500/70' : 
+                        data.rate > 0 ? 'bg-emerald-600/40' : 'bg-white/5'
                       }`}
-                      style={{ height: `${Math.max(data.rate, 2)}%` }}
+                      style={{ height: `${Math.max(data.rate, 4)}%` }}
                     />
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded border border-white/10 whitespace-nowrap">
+                    
+                    {/* Tooltip */}
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:-translate-y-1 bg-slate-800 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg border border-white/10 whitespace-nowrap z-20 pointer-events-none shadow-2xl">
                       {data.rate}%
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45 border-r border-b border-white/10" />
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">{data.day}</span>
+                  <span className="mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-tight">{data.day}</span>
                 </div>
               ))}
             </div>

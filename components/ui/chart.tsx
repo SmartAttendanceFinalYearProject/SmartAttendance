@@ -69,7 +69,7 @@ ChartContainer.displayName = "Chart"
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
-    ([__, config]) => config.theme || config.color
+    ([_, config]) => config.theme || config.color
   )
 
   if (!colorConfig.length) {
@@ -185,7 +185,7 @@ const ChartTooltipContent = React.forwardRef<
       >
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
-          {payload.map((item: any, index: number) => {
+          {payload.map((item: any, index: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
             const key = `${nameKey || item.name || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
             const indicatorColor = color || item.payload.fill || item.color
@@ -285,7 +285,7 @@ const ChartLegendContent = React.forwardRef<
           className
         )}
       >
-        {payload.map((item: any) => {
+        {payload.map((item: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const key = `${nameKey || item.dataKey || "value"}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
 

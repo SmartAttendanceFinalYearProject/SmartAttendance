@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useCallback } from "react"
+import Image from "next/image"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -242,8 +243,8 @@ export default function FaceRegistrationPage() {
           <div className="p-6">
             <div className="flex flex-col items-center gap-6">
               {capturedImage && (
-                <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-emerald-500/30 shadow-xl">
-                  <img src={capturedImage} alt="Registered face" className="w-full h-full object-cover" />
+                <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-emerald-500/30 shadow-xl relative">
+                  <Image src={capturedImage} alt="Registered face" fill className="object-cover" unoptimized />
                 </div>
               )}
               <div className="w-full space-y-3">
@@ -333,10 +334,12 @@ export default function FaceRegistrationPage() {
                   />
                 ) : (
                   <div className="relative rounded-xl overflow-hidden w-full max-w-md aspect-video border border-border">
-                    <img
+                    <Image
                       src={capturedImage}
                       alt="Captured face"
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      unoptimized
                     />
                   </div>
                 )}
@@ -473,8 +476,8 @@ export default function FaceRegistrationPage() {
 
                 {capturedImage ? (
                   <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
-                    <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex-shrink-0">
-                      <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
+                    <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex-shrink-0 relative">
+                      <Image src={capturedImage} alt="Captured face" fill className="object-cover" unoptimized />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-white">Identity Matrix Confirmed</p>

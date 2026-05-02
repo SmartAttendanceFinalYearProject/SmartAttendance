@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState, useCallback } from "react"
+import Image from "next/image"
 import { ImageDown } from "lucide-react"
 
 export default function WebcamFeed() {
@@ -103,7 +104,9 @@ export default function WebcamFeed() {
         <div className="mt-4 p-2 border rounded-lg shadow-md">
           <h3 className="text-lg font-semibold mb-2">Captured Image:</h3>
           <ImageDown className="w-4 h-4" />
-          <img src={imageURL} alt="Captured" className="max-w-xs rounded-lg" />
+          <div className="relative w-full max-w-xs h-64">
+            <Image src={imageURL} alt="Captured" fill className="rounded-lg object-contain" unoptimized />
+          </div>
         </div>
       )}
     </div>

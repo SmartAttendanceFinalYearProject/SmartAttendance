@@ -73,7 +73,7 @@ const WebcamCapture = ({
       <div className="relative rounded-xl overflow-hidden w-full max-w-md aspect-video border border-border bg-slate-950">
         <Webcam
           audio={false}
-          ref={webcamRef as React.RefObject<WebcamHandle>}
+          ref={webcamRef}
           screenshotFormat="image/jpeg"
           videoConstraints={{ facingMode: "user" }}
           className="w-full h-full object-cover"

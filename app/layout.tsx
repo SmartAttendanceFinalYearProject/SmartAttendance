@@ -1,6 +1,5 @@
 import "./globals.css"
 import localFont from "next/font/local"
-import Link from "next/link"
 import { Background } from "@/components/ui/background"
 import Navbar from "@/components/Navbar"
 import { Toaster } from "sonner"  

@@ -1,8 +1,10 @@
 "use client"
 
 import type React from "react"
+import type { ComponentType } from "react"
 import { useState, useRef, useCallback } from "react"
 import dynamic from "next/dynamic"
+import type { WebcamProps } from "react-webcam"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,10 +17,18 @@ const LivenessCheck = dynamic(() => import("@/components/LivenessCheck").then(mo
   ssr: false
 })
 
-const Webcam = dynamic(() => import("react-webcam"), {
-  loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
-  ssr: false
-})
+const Webcam = dynamic(
+  () =>
+    import("react-webcam").then(
+      (mod) => mod.default as ComponentType<WebcamProps>
+    ),
+  {
+    loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
+    ssr: false,
+  }
+)
+
+type WebcamHandle = { getScreenshot: () => string | null }
 
 
 const WebcamCapture = ({
@@ -30,7 +40,7 @@ const WebcamCapture = ({
   onLivenessComplete?: (success: boolean) => void
   initialLivenessPassed?: boolean
 }) => {
-  const webcamRef = useRef<Webcam>(null)
+  const webcamRef = useRef<WebcamHandle | null>(null)
   const [showLivenessCheck, setShowLivenessCheck] = useState(false)
   const [livenessPassed, setLivenessPassed] = useState(initialLivenessPassed)
 
@@ -63,7 +73,7 @@ const WebcamCapture = ({
       <div className="relative rounded-xl overflow-hidden w-full max-w-md aspect-video border border-border bg-slate-950">
         <Webcam
           audio={false}
-          ref={webcamRef}
+          ref={webcamRef as React.RefObject<WebcamHandle>}
           screenshotFormat="image/jpeg"
           videoConstraints={{ facingMode: "user" }}
           className="w-full h-full object-cover"

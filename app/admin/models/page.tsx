@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,6 +44,15 @@ const emptyClassForm = {
 
 type Tab = "subjects" | "teachers" | "classes"
 
+type ViewItem =
+  | { type: "subjects"; data: Subject }
+  | { type: "teachers"; data: Teacher }
+  | { type: "classes"; data: ClassItem }
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Something went wrong"
+}
+
 export default function AdminModelsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("subjects")
   const [showForm, setShowForm] = useState(false)
@@ -71,14 +80,14 @@ export default function AdminModelsPage() {
   const [classForm, setClassForm] = useState(emptyClassForm)
   const [editingClassId, setEditingClassId] = useState<string | null>(null)
   const [isSubmittingClass, setIsSubmittingClass] = useState(false)
-  const [viewingItem, setViewingItem] = useState<{ type: Tab; data: any } | null>(null)
+  const [viewingItem, setViewingItem] = useState<ViewItem | null>(null)
 
-  const authHeader = useMemo(() => {
+  const authHeader = useMemo((): Record<string, string> => {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
       const [subjectRes, teacherRes, classRes, studentRes] = await Promise.all([
         fetch(`${API}/subjects`, { headers: authHeader }),
@@ -100,17 +109,16 @@ export default function AdminModelsPage() {
       if (classRes.ok) setClasses(await classRes.json())
       else toast.error("Could not load classes — check backend logs")
 
-    } catch (error: any) {
-      toast.error(error.message || "Network error — could not reach backend")
+    } catch (error: unknown) {
+      toast.error(errorMessage(error) || "Network error — could not reach backend")
     } finally {
       setLoading(false)
     }
-  }
-
+  }, [authHeader])
 
   useEffect(() => {
-    fetchAll()
-  }, [])
+    void fetchAll()
+  }, [fetchAll])
 
   const submitSubject = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -129,8 +137,8 @@ export default function AdminModelsPage() {
       setEditingSubjectId(null)
       setShowForm(false)
       await fetchAll()
-    } catch (error: any) {
-      toast.error(error.message || "Subject save failed")
+    } catch (error: unknown) {
+      toast.error(errorMessage(error) || "Subject save failed")
     } finally {
       setIsSubmittingSubject(false)
     }
@@ -162,8 +170,8 @@ export default function AdminModelsPage() {
       setEditingTeacherId(null)
       setShowForm(false)
       await fetchAll()
-    } catch (error: any) {
-      toast.error(error.message || "Teacher save failed")
+    } catch (error: unknown) {
+      toast.error(errorMessage(error) || "Teacher save failed")
     } finally {
       setIsSubmittingTeacher(false)
     }
@@ -213,8 +221,8 @@ export default function AdminModelsPage() {
       setEditingClassId(null)
       setShowForm(false)
       await fetchAll()
-    } catch (error: any) {
-      toast.error(error.message || "Class save failed")
+    } catch (error: unknown) {
+      toast.error(errorMessage(error) || "Class save failed")
     } finally {
       setIsSubmittingClass(false)
     }
@@ -470,7 +478,7 @@ export default function AdminModelsPage() {
                   </div>
                   <p className="text-white font-bold mb-1">No Teachers Found</p>
                   <p className="text-xs text-slate-500 mb-6 text-center max-w-[280px]">
-                    You haven't added any teachers yet. Registered teachers will be able to manage their own classes and attendance.
+                    You haven&apos;t added any teachers yet. Registered teachers will be able to manage their own classes and attendance.
                   </p>
                   <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl px-6">
                     <Plus size={16} /> Create First Teacher

@@ -37,7 +37,7 @@ export function generateScheduledSessions(startDate: string, endDate: string, sc
     dayName: s.day
   }));
 
-  let current = new Date(start);
+  const current = new Date(start);
   // Reset time to midnight to avoid issues with time comparisons
   current.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);

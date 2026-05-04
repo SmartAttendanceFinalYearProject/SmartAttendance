@@ -1,59 +1,265 @@
 "use client"
 
 import type React from "react"
-import type { ComponentType } from "react"
 import { useState, useRef, useCallback } from "react"
 import dynamic from "next/dynamic"
-import type { WebcamProps } from "react-webcam"
+import Webcam from "react-webcam"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, RotateCcw, ArrowRight, Calendar, Hash, BarChart3 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useToast } from "@/components/ui/use-toast"
-import Image from "next/image"
-
-type WebcamHandle = React.RefObject<Webcam & {
-  getScreenshot: () => string | null;
-}>;
+import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, ArrowRight, Calendar, Hash, BarChart3 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Image from "next/image";
 
 const LivenessCheck = dynamic(() => import("@/components/LivenessCheck").then(mod => mod.LivenessCheck), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
   ssr: false
 })
 
-const Webcam = dynamic(
-  () =>
-    import("react-webcam").then(
-      (mod) => mod.default as ComponentType<WebcamProps>
-    ),
-  {
-    loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
-    ssr: false,
+type WebcamHandle = Webcam & { getScreenshot: () => string | null };
+
+const WebcamCapture = ({
+  onCapture,
+  onLivenessComplete,
+  initialLivenessPassed = false,
+}: {
+  onCapture: (imageSrc: string | null) => void
+  onLivenessComplete?: (success: boolean) => void
+  initialLivenessPassed?: boolean
+}) => {
+  const webcamRef = useRef<WebcamHandle | null>(null)
+  const [showLivenessCheck, setShowLivenessCheck] = useState(false)
+  const [livenessPassed, setLivenessPassed] = useState(initialLivenessPassed)
+
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current?.getScreenshot?.() || null
+    onCapture(imageSrc)
+  }, [onCapture])
+
+  const handleLivenessComplete = (success: boolean) => {
+    setShowLivenessCheck(false)
+    if (success) {
+      setLivenessPassed(true)
+      if (onLivenessComplete) onLivenessComplete(true)
+    } else {
+      if (onLivenessComplete) onLivenessComplete(false)
+    }
   }
-)
+
+  if (showLivenessCheck) {
+    return (
+      <LivenessCheck
+        onComplete={handleLivenessComplete}
+        onCancel={() => setShowLivenessCheck(false)}
+      />
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-4 w-full">
+      <div className="relative rounded-xl overflow-hidden w-full max-w-md aspect-video border border-border bg-slate-950">
+        <Webcam
+          audio={false}
+          ref={webcamRef}
+          screenshotFormat="image/jpeg"
+          videoConstraints={{ facingMode: "user" }}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {livenessPassed ? (
+        <div className="flex items-center gap-3 w-full max-w-md px-5 py-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20 flex-shrink-0">
+            <Check size={16} className="text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-emerald-400">Liveness Verified</p>
+            <p className="text-xs text-emerald-500/70 font-medium">Identity confirmed successfully</p>
+          </div>
+        </div>
+      ) : (
+        <Button
+          onClick={() => setShowLivenessCheck(true)}
+          className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 rounded-xl px-6 shadow-lg shadow-blue-500/20"
+        >
+          <Shield size={16} />
+          Start Liveness Check
+        </Button>
+      )}
+
+      {livenessPassed && (
+        <Button onClick={capture} variant="outline" size="sm" className="gap-2 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
+          <Camera size={14} />
+          Capture Photo
+        </Button>
+      )}
+    </div>
+  )
+}
 
 export default function AdminRegistrationPage() {
-  const [isCameraOpen, setIsCameraOpen] = useState(false)
-  const [capturedImages, setCapturedImages] = useState<string[]>([])
-  const [isLivenessChecked, setIsLivenessChecked] = useState(false)
-  const webcamRef = useRef<Webcam>(null)
-  const { toast } = useToast()
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [livenessVerified, setLivenessVerified] = useState(false)
+  const [formData, setFormData] = useState({
+    fullName: "",
+    studentID: "",
+    department: "",
+    section: "",
+    email: "",
+    batch: "",
+    class_year: "1st",
+    semester: "1st",
+  })
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [isRegistered, setIsRegistered] = useState(false)
+  const [activeTab, setActiveTab] = useState("capture")
+  const [error, setError] = useState<string | null>(null)
 
-  const handleRegister = async () => {
-    setIsCameraOpen(false)
-    setIsLivenessChecked(true)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    setError(null)
   }
 
-  const capture = () => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot()
-      if (imageSrc) {
-        setCapturedImages((prevImages) => [...prevImages, imageSrc])
-      }
+  const handleLivenessComplete = (success: boolean) => {
+    setLivenessVerified(success)
+  }
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return email === "" || emailRegex.test(email)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!capturedImage) {
+      setError("Please capture your face image before registering")
+      return
     }
+
+    if (!livenessVerified) {
+      setError("Please complete the liveness check to verify you're a real person")
+      return
+    }
+
+    if (!formData.fullName || !formData.studentID) {
+      setError("Full Name and Student ID are required fields")
+      return
+    }
+
+    if (formData.email && !validateEmail(formData.email)) {
+      setError("Please enter a valid email address")
+      return
+    }
+
+    setIsRegistering(true)
+    setError(null)
+
+    try {
+      const base64Data = capturedImage.includes(",")
+        ? capturedImage.split(",")[1]
+        : capturedImage
+
+      const byteCharacters = atob(base64Data)
+      const byteArrays = []
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArrays.push(byteCharacters.charCodeAt(i))
+      }
+
+      const byteArray = new Uint8Array(byteArrays)
+      const blob = new Blob([byteArray], { type: "image/jpeg" })
+      const file = new File([blob], "face.jpg", { type: "image/jpeg" })
+
+      const formDataToSend = new FormData()
+      formDataToSend.append("fullName", formData.fullName)
+      formDataToSend.append("studentID", formData.studentID)
+
+      if (formData.department) formDataToSend.append("department", formData.department)
+      if (formData.section) formDataToSend.append("section", formData.section)
+      if (formData.email) formDataToSend.append("email", formData.email)
+      formDataToSend.append("batch", formData.batch)
+      formDataToSend.append("class_year", formData.class_year)
+      formDataToSend.append("semester", formData.semester)
+
+      formDataToSend.append("image", file)
+
+      const response = await fetch("http://localhost:8000/register", {
+        method: "POST",
+        body: formDataToSend,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || `Registration failed with status ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("Registration successful:", result)
+
+      setIsRegistered(true)
+
+      setFormData({
+        fullName: "",
+        studentID: "",
+        department: "",
+        section: "",
+        email: "",
+        batch: "",
+        class_year: "1st",
+        semester: "1st",
+      })
+      setCapturedImage(null)
+      setLivenessVerified(false)
+      setActiveTab("capture")
+    } catch (error: unknown) {
+      console.error("Error registering user:", error)
+      const message = error instanceof Error ? error.message : "Failed to register user. Please try again."
+      setError(message)
+    } finally {
+      setIsRegistering(false)
+    }
+  }
+
+  if (isRegistered) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 py-8 max-w-sm">
+        <div className="rounded-2xl border border-white/5 bg-card shadow-2xl overflow-hidden backdrop-blur-md">
+          <div className="px-6 py-8 bg-emerald-500/10 border-b border-white/5 flex flex-col items-center text-center">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 mb-4">
+              <Check size={32} className="text-emerald-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight mb-1">Registration Successful</h2>
+            <p className="text-sm text-emerald-400/80 font-medium">Student data has been securely saved</p>
+          </div>
+
+          <div className="p-6">
+            <Button
+              className="w-full gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold h-11 rounded-xl shadow-lg shadow-emerald-600/20"
+              onClick={() => {
+                setCapturedImage(null)
+                setLivenessVerified(false)
+                setFormData({ fullName: "", studentID: "", department: "", section: "", email: "", batch: "", class_year: "1st", semester: "1st" })
+                setIsRegistered(false)
+                setActiveTab("capture")
+                setError(null)
+              }}
+            >
+              Register Another Student
+              <ArrowRight size={16} />
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -90,31 +296,21 @@ export default function AdminRegistrationPage() {
 
             <div className="p-5">
               <div className="flex flex-col items-center gap-4">
-                {!capturedImages.length ? (
+                {!capturedImage ? (
+                  <WebcamCapture
+                    onCapture={setCapturedImage}
+                    onLivenessComplete={handleLivenessComplete}
+                    initialLivenessPassed={livenessVerified}
+                  />
+                ) : (
                   <div className="relative rounded-xl overflow-hidden w-full max-w-md aspect-video border border-border">
-                    <img
+                    <Image
                       src={capturedImage}
                       alt="Captured face"
+                      width={640}
+                      height={360}
                       className="w-full h-full object-cover"
                     />
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <p className="text-sm text-gray-500 mb-2">
-                      Captured Images
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {capturedImages.map((src, index) => (
-                        <Image
-                          key={index}
-                          src={src}
-                          alt={`Captured image ${index + 1}`}
-                          width={100}
-                          height={100}
-                          className="object-cover rounded-md"
-                        />
-                      ))}
-                    </div>
                   </div>
                 )}
 
@@ -130,21 +326,50 @@ export default function AdminRegistrationPage() {
               </div>
             </div>
 
-            {capturedImages.length && (
-              <div className="px-6 pb-6 flex justify-center gap-4">
-                <Button variant="outline" onClick={retakeImage} size="sm" className="gap-2 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
-                  <RotateCcw size={14} />
-                  Retake Photo
-                </Button>
+            {capturedImage ? (
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
+                <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex-shrink-0">
+                  <Image
+                    src={capturedImage}
+                    alt="Captured face"
+                    width={56}
+                    height={56}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white">Identity Matrix Confirmed</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {livenessVerified ? (
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                        <Check size={12} /> Secure Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                        <AlertCircle size={12} /> Pending Verification
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <Button
-                  onClick={() => setActiveTab("info")}
-                  disabled={!isLivenessChecked}
+                  type="button"
+                  variant="ghost"
                   size="sm"
-                  className="gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl"
+                  onClick={() => setActiveTab("capture")}
+                  className="text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-lg h-8"
                 >
-                  {isLivenessChecked ? "Continue Registration" : "Verify Identity First"}
-                  {isLivenessChecked && <ArrowRight size={14} />}
+                  Swap
                 </Button>
+              </div>
+            ) : (
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-red-400 uppercase tracking-tight">Biometric Step Required</p>
+                  <p className="text-xs text-red-300/80 mt-1 leading-relaxed">
+                    Security protocols require you to <button type="button" onClick={() => setActiveTab("capture")} className="text-white underline font-bold hover:text-white/80">authenticate via camera</button> before finishing.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -247,7 +472,6 @@ export default function AdminRegistrationPage() {
                     />
                   </div>
 
-                  {/* Academic Info Divider */}
                   <div className="sm:col-span-2 pt-2 pb-1 border-b border-white/5">
                     <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest px-1">Academic Details</h3>
                   </div>
@@ -310,10 +534,16 @@ export default function AdminRegistrationPage() {
                   </div>
                 </div>
 
-                {capturedImages.length ? (
+                {capturedImage ? (
                   <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
                     <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex-shrink-0">
-                      <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
+                      <Image
+                        src={capturedImage}
+                        alt="Captured face"
+                        width={56}
+                        height={56}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-white">Identity Matrix Confirmed</p>

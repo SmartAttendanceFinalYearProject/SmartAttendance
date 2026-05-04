@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -52,9 +51,8 @@ export default function LoginPage() {
       } else {
         router.push("/dashboard")
       }
-    } catch (error: any) {
-      // Show error toast
-      toast.error(error.message || "Invalid username or password")
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Invalid username or password")
     } finally {
       setIsLoading(false)
     }

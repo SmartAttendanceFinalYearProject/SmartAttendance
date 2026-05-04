@@ -3,20 +3,22 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { Play, Square, Camera, ListChecks, BookOpen, Loader2, AlertCircle, Image as ImageIcon } from "lucide-react"
+import { Play, Square, Camera, ListChecks, BookOpen, Loader2, Image as ImageIcon } from "lucide-react"
 
 const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
   ssr: false
 })
 
-const Webcam = dynamic(() => import("react-webcam"), {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Webcam = dynamic(() => import("react-webcam").then((mod) => mod.default as any), {
   loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
   ssr: false
-})
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any
 
 
-import { generateScheduledSessions, type DaySchedule, type ScheduledSession } from "@/lib/session-utils"
+import { generateScheduledSessions, type DaySchedule } from "@/lib/session-utils"
 
 interface Student {
   id: string;
@@ -34,17 +36,38 @@ interface Class {
   student_details: Student[];
 }
 
+interface ScannerRecord {
+  student_id: string
+  full_name: string
+  status: string
+  timestamp: string
+  emotion?: string
+  pose?: string
+}
+
+/** Matches react-webcam imperative handle used by this page */
+type WebcamCaptureRef = { getScreenshot: () => string | null }
+
+interface RecognitionRow {
+  student_id: string
+  full_name?: string
+  status?: string
+  timestamp?: string
+  emotion?: string
+  pose?: string
+}
+
 export default function TeacherScannerPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [classes, setClasses] = useState<Class[]>([])
   const [selectedClassId, setSelectedClassId] = useState<string>("")
   const [selectedSessionId, setSelectedSessionId] = useState<string>("")
-  const [records, setRecords] = useState<any[]>([])
+  const [records, setRecords] = useState<ScannerRecord[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [approvalSuccess, setApprovalSuccess] = useState(false)
-  const webcamRef = useRef<any>(null)
+  const webcamRef = useRef<WebcamCaptureRef | null>(null)
 
   const selectedClass = classes.find(c => c.id === selectedClassId)
   
@@ -163,16 +186,16 @@ export default function TeacherScannerPage() {
       if (result.status === "success") {
         setRecords(prev => {
           const newRecords = [...prev];
-          result.results.forEach((newR: any) => {
+          result.results.forEach((newR: RecognitionRow) => {
             const idx = newRecords.findIndex(r => r.student_id === newR.student_id);
             if (idx >= 0) {
               // Update if new result is "present" or if current is "unknown"
               if (newR.status === "present" || newRecords[idx].status === "unknown") {
-                newRecords[idx] = { ...newRecords[idx], ...newR };
+                newRecords[idx] = { ...newRecords[idx], ...(newR as ScannerRecord) };
               }
             } else if (newR.status === "present") {
               // If not found (e.g. unknown student not in roster), add them
-              newRecords.push(newR);
+              newRecords.push(newR as ScannerRecord);
             }
           });
           return newRecords;
@@ -392,7 +415,7 @@ export default function TeacherScannerPage() {
 
                 <Webcam
                   audio={false}
-                  ref={webcamRef}
+                  ref={webcamRef as React.RefObject<WebcamCaptureRef>}
                   screenshotFormat="image/jpeg"
                   videoConstraints={{ facingMode: "user" }}
                   className="w-full h-full object-cover"

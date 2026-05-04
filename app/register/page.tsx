@@ -10,16 +10,19 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, RotateCcw, ArrowRight } from "lucide-react"
 
+import type WebcamType from "react-webcam"
+
 const LivenessCheck = dynamic(() => import("@/components/LivenessCheck").then(mod => mod.LivenessCheck), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
   ssr: false
 })
 
-const Webcam = dynamic(() => import("react-webcam"), {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Webcam = dynamic(() => import("react-webcam").then((mod) => mod.default as any), {
   loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
   ssr: false
-})
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any
 
 const WebcamCapture = ({
   onCapture,
@@ -28,7 +31,7 @@ const WebcamCapture = ({
   onCapture: (imageSrc: string | null) => void
   onLivenessComplete?: (success: boolean) => void
 }) => {
-  const webcamRef = useRef<Webcam>(null)
+  const webcamRef = useRef<WebcamType>(null)
   const [showLivenessCheck, setShowLivenessCheck] = useState(false)
   const [livenessPassed, setLivenessPassed] = useState(false)
 

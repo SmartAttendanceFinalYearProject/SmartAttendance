@@ -10,10 +10,12 @@ const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   ssr: false
 })
 
-const Webcam = dynamic(() => import("react-webcam"), {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Webcam = dynamic(() => import("react-webcam").then((mod) => mod.default as any), {
   loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
   ssr: false
-})
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any
 
 
 import { generateScheduledSessions, type DaySchedule } from "@/lib/session-utils"
@@ -189,11 +191,11 @@ export default function TeacherScannerPage() {
             if (idx >= 0) {
               // Update if new result is "present" or if current is "unknown"
               if (newR.status === "present" || newRecords[idx].status === "unknown") {
-                newRecords[idx] = { ...newRecords[idx], ...newR };
+                newRecords[idx] = { ...newRecords[idx], ...(newR as ScannerRecord) };
               }
             } else if (newR.status === "present") {
               // If not found (e.g. unknown student not in roster), add them
-              newRecords.push(newR);
+              newRecords.push(newR as ScannerRecord);
             }
           });
           return newRecords;

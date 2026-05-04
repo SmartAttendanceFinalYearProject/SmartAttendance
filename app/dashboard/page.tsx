@@ -9,14 +9,24 @@ export default function DashboardPage() {
   const [totalStudents] = useState(50)
   const [presentStudents, setPresentStudents] = useState(0)
   const [lastUpdateTime, setLastUpdateTime] = useState("-")
-  const [attendance, setAttendance] = useState<string[]>([])
+  const [attendance, setAttendance] = useState<Array<{
+    student_id: string;
+    full_name: string;
+    status: string;
+    timestamp: string;
+  }>>([])
 
   useEffect(() => {
     const fetchData = () => {
-      const newAttendance = Array.from({ length: Math.floor(Math.random() * 20) + 1 }, () => {
+      const newAttendance = Array.from({ length: Math.floor(Math.random() * 20) + 1 }, (_, i) => {
         const date = new Date()
         date.setMinutes(date.getMinutes() - Math.floor(Math.random() * 60))
-        return `Attendance logged at ${date.toLocaleTimeString()}`
+        return {
+          student_id: `STU${1000 + i}`,
+          full_name: `Student ${i + 1}`,
+          status: Math.random() > 0.2 ? 'present' : 'absent',
+          timestamp: date.toISOString(),
+        }
       })
       setAttendance(newAttendance)
       setPresentStudents(newAttendance.length)
@@ -60,7 +70,7 @@ export default function DashboardPage() {
               </span>
             )}
           </div>
-          <AttendanceList attendance={attendance} />
+          <AttendanceList records={attendance} />
         </div>
       </div>
     </div>

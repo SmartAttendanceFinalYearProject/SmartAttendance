@@ -111,6 +111,17 @@ const ChartTooltipContent = React.forwardRef<
       indicator?: "line" | "dot" | "dashed"
       nameKey?: string
       labelKey?: string
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      payload?: any[]
+      active?: boolean
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      label?: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      labelFormatter?: (value: any, payload: any[]) => React.ReactNode
+      labelClassName?: string
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatter?: (value: any, name: any, item: any, index: number, payload: any) => React.ReactNode
+      color?: string
     }
 >(
   (
@@ -185,7 +196,7 @@ const ChartTooltipContent = React.forwardRef<
       >
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
-          {payload.map((item: any, index: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+          {payload.map((item: any, index: number) => { 
             const key = `${nameKey || item.name || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
             const indicatorColor = color || item.payload.fill || item.color
@@ -260,8 +271,10 @@ const ChartLegend = RechartsPrimitive.Legend
 
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> &
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+  React.ComponentProps<"div"> & {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      payload?: any[]
+      verticalAlign?: "top" | "middle" | "bottom"
       hideIcon?: boolean
       nameKey?: string
     }

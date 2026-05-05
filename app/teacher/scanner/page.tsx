@@ -55,6 +55,7 @@ interface RecognitionRow {
   timestamp?: string
   emotion?: string
   pose?: string
+  recognized?: boolean
 }
 
 export default function TeacherScannerPage() {
@@ -188,14 +189,25 @@ export default function TeacherScannerPage() {
           const newRecords = [...prev];
           result.results.forEach((newR: RecognitionRow) => {
             const idx = newRecords.findIndex(r => r.student_id === newR.student_id);
+            const isPresent = newR.recognized === true || newR.status === "present";
+            
             if (idx >= 0) {
               // Update if new result is "present" or if current is "unknown"
-              if (newR.status === "present" || newRecords[idx].status === "unknown") {
-                newRecords[idx] = { ...newRecords[idx], ...(newR as ScannerRecord) };
+              if (isPresent || newRecords[idx].status === "unknown") {
+                newRecords[idx] = { 
+                  ...newRecords[idx], 
+                  ...(newR as ScannerRecord),
+                  status: isPresent ? "present" : "absent",
+                  timestamp: newR.timestamp || new Date().toISOString()
+                };
               }
-            } else if (newR.status === "present") {
+            } else if (isPresent) {
               // If not found (e.g. unknown student not in roster), add them
-              newRecords.push(newR as ScannerRecord);
+              newRecords.push({
+                ...(newR as ScannerRecord),
+                status: "present",
+                timestamp: newR.timestamp || new Date().toISOString()
+              });
             }
           });
           return newRecords;

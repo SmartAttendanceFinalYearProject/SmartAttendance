@@ -31,6 +31,7 @@ interface AttendanceRecord {
   emotion?: string;
   pose?: string;
   timestamp: string;
+  recognized?: boolean;
 }
 
 interface AttendanceSession {
@@ -216,8 +217,8 @@ export default function TeacherDashboardPage() {
       r.student_id && r.student_id.toLowerCase() !== "unknown"
     );
 
-    const present = filtered.filter(r => r.status === 'present').length;
-    const absent = filtered.filter(r => r.status === 'absent').length;
+    const present = filtered.filter(r => r.status === 'present' || r.recognized === true).length;
+    const absent = filtered.filter(r => r.status === 'absent' && r.recognized !== true).length;
     
     // Use actual record timestamp instead of scheduled session date
     const actualRecord = currentSessionData.records.find((r: AttendanceRecord) => r.status === 'present') || currentSessionData.records[0];
@@ -580,8 +581,8 @@ export default function TeacherDashboardPage() {
                             r.student_id && r.student_id.toLowerCase() !== "unknown"
                           ) : [];
 
-                          const presentCount = filteredRecords.filter((r: AttendanceRecord) => r.status === 'present').length;
-                          const absentCount = filteredRecords.filter((r: AttendanceRecord) => r.status === 'absent').length;
+                          const presentCount = filteredRecords.filter((r: AttendanceRecord) => r.status === 'present' || r.recognized === true).length;
+                          const absentCount = filteredRecords.filter((r: AttendanceRecord) => r.status === 'absent' && r.recognized !== true).length;
 
                           return (
                             <TabsContent key={session.id} value={tabValue} className="mt-0 outline-none animate-in fade-in duration-500">
@@ -624,7 +625,10 @@ export default function TeacherDashboardPage() {
                               
                               {record ? (
                                 <div className="rounded-[2rem] border border-white/5 bg-black/20 overflow-hidden shadow-inner">
-                                  <AttendanceList records={filteredRecords} />
+                                  <AttendanceList records={filteredRecords.map(r => ({
+                                    ...r,
+                                    status: (r.status === 'present' || r.recognized === true) ? 'present' : 'absent'
+                                  }))} />
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-center justify-center py-24 text-slate-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">

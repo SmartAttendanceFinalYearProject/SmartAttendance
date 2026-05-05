@@ -3,23 +3,27 @@
 import type React from "react"
 import { useState, useRef, useCallback } from "react"
 import dynamic from "next/dynamic"
+import Webcam from "react-webcam"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, RotateCcw, ArrowRight, Calendar, Hash, BarChart3 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CircleAlert as AlertCircle, Camera, Check, User, Shield, Mail, BookOpen, Users, ArrowRight, Calendar, Hash, BarChart3 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Image from "next/image";
 
 const LivenessCheck = dynamic(() => import("@/components/LivenessCheck").then(mod => mod.LivenessCheck), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
   ssr: false
 })
 
-const Webcam = dynamic(() => import("react-webcam"), {
-  loading: () => <div className="aspect-video w-full animate-pulse bg-black rounded-2xl" />,
-  ssr: false
-})
-
+type WebcamHandle = Webcam & { getScreenshot: () => string | null };
 
 const WebcamCapture = ({
   onCapture,
@@ -30,12 +34,12 @@ const WebcamCapture = ({
   onLivenessComplete?: (success: boolean) => void
   initialLivenessPassed?: boolean
 }) => {
-  const webcamRef = useRef<Webcam>(null)
+  const webcamRef = useRef<WebcamHandle | null>(null)
   const [showLivenessCheck, setShowLivenessCheck] = useState(false)
   const [livenessPassed, setLivenessPassed] = useState(initialLivenessPassed)
 
   const capture = useCallback(() => {
-    const imageSrc = webcamRef.current?.getScreenshot() || null
+    const imageSrc = webcamRef.current?.getScreenshot?.() || null
     onCapture(imageSrc)
   }, [onCapture])
 
@@ -121,12 +125,6 @@ export default function AdminRegistrationPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-    setError(null)
-  }
-
-  const retakeImage = () => {
-    setCapturedImage(null)
-    // keep Liveness verified if it was, just retake the photo
     setError(null)
   }
 
@@ -306,9 +304,11 @@ export default function AdminRegistrationPage() {
                   />
                 ) : (
                   <div className="relative rounded-xl overflow-hidden w-full max-w-md aspect-video border border-border">
-                    <img
+                    <Image
                       src={capturedImage}
                       alt="Captured face"
+                      width={640}
+                      height={360}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -326,21 +326,50 @@ export default function AdminRegistrationPage() {
               </div>
             </div>
 
-            {capturedImage && (
-              <div className="px-6 pb-6 flex justify-center gap-4">
-                <Button variant="outline" onClick={retakeImage} size="sm" className="gap-2 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
-                  <RotateCcw size={14} />
-                  Retake Photo
-                </Button>
+            {capturedImage ? (
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
+                <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex-shrink-0">
+                  <Image
+                    src={capturedImage}
+                    alt="Captured face"
+                    width={56}
+                    height={56}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white">Identity Matrix Confirmed</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {livenessVerified ? (
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                        <Check size={12} /> Secure Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                        <AlertCircle size={12} /> Pending Verification
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <Button
-                  onClick={() => setActiveTab("info")}
-                  disabled={!livenessVerified}
+                  type="button"
+                  variant="ghost"
                   size="sm"
-                  className="gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl"
+                  onClick={() => setActiveTab("capture")}
+                  className="text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-lg h-8"
                 >
-                  {livenessVerified ? "Continue Registration" : "Verify Identity First"}
-                  {livenessVerified && <ArrowRight size={14} />}
+                  Swap
                 </Button>
+              </div>
+            ) : (
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-red-400 uppercase tracking-tight">Biometric Step Required</p>
+                  <p className="text-xs text-red-300/80 mt-1 leading-relaxed">
+                    Security protocols require you to <button type="button" onClick={() => setActiveTab("capture")} className="text-white underline font-bold hover:text-white/80">authenticate via camera</button> before finishing.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -443,7 +472,6 @@ export default function AdminRegistrationPage() {
                     />
                   </div>
 
-                  {/* Academic Info Divider */}
                   <div className="sm:col-span-2 pt-2 pb-1 border-b border-white/5">
                     <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest px-1">Academic Details</h3>
                   </div>
@@ -509,7 +537,13 @@ export default function AdminRegistrationPage() {
                 {capturedImage ? (
                   <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
                     <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex-shrink-0">
-                      <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
+                      <Image
+                        src={capturedImage}
+                        alt="Captured face"
+                        width={56}
+                        height={56}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-white">Identity Matrix Confirmed</p>

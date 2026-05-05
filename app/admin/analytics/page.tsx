@@ -17,13 +17,34 @@ import {
   BookOpen
 } from "lucide-react"
 import { toast } from "sonner"
+import type { LucideIcon } from "lucide-react"
+
+type BackendStat = {
+  title: string
+  value: string
+  change: string
+  isPositive: boolean
+}
+
+type StatRow = BackendStat & { icon: LucideIcon; color: string; bg: string }
+
+type WeeklyDay = { day: string; rate: number }
+
+type Department = { name: string; count: number }
+
+type AnalyticsResponse = {
+  stats: BackendStat[]
+  weeklyData: WeeklyDay[]
+  departments: Department[]
+  totalStudentsRaw?: number
+}
 
 export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState("Last 7 Days")
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<any[]>([])
-  const [weeklyData, setWeeklyData] = useState<any[]>([])
-  const [departments, setDepartments] = useState<any[]>([])
+  const [stats, setStats] = useState<StatRow[]>([])
+  const [weeklyData, setWeeklyData] = useState<WeeklyDay[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [totalStudents, setTotalStudents] = useState(0)
 
   const fetchAnalytics = async () => {
@@ -38,19 +59,22 @@ export default function AdminAnalyticsPage() {
       
       if (!response.ok) throw new Error("Failed to fetch analytics")
       
-      const data = await response.json()
-      
-      // Map icons to backend stats
-      const iconMap: Record<string, any> = {
+      const data = (await response.json()) as AnalyticsResponse
+
+      const iconMap: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
         "Average Attendance": { icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
         "Total Students": { icon: Users, color: "text-blue-400", bg: "bg-blue-500/10" },
         "Total Classes": { icon: BookOpen, color: "text-amber-400", bg: "bg-amber-500/10" },
-        "Active Teachers": { icon: CheckCircle2, color: "text-purple-400", bg: "bg-purple-500/10" }
+        "Active Teachers": { icon: CheckCircle2, color: "text-purple-400", bg: "bg-purple-500/10" },
       }
 
-      const formattedStats = data.stats.map((s: any) => ({
+      const formattedStats: StatRow[] = data.stats.map((s) => ({
         ...s,
-        ...(iconMap[s.title] || { icon: BarChart3, color: "text-slate-400", bg: "bg-slate-500/10" })
+        ...(iconMap[s.title] ?? {
+          icon: BarChart3,
+          color: "text-slate-400",
+          bg: "bg-slate-500/10",
+        }),
       }))
 
       setStats(formattedStats)

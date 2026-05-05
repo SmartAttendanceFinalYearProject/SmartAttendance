@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import dynamic from "next/dynamic"
-import { ListChecks, BookOpen, Users, Calendar, Clock, ChevronRight, Loader2, FileSpreadsheet, Download } from "lucide-react"
+import { ListChecks, BookOpen, Users, Calendar, Clock, ChevronRight, FileSpreadsheet } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { utils, writeFile } from "xlsx"
 
@@ -16,7 +16,7 @@ const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   ssr: false
 })
 
-import { generateScheduledSessions, type DaySchedule, type ScheduledSession } from "@/lib/session-utils"
+import { generateScheduledSessions, type DaySchedule } from "@/lib/session-utils"
 
 interface Student {
   id: string;
@@ -31,6 +31,7 @@ interface AttendanceRecord {
   emotion?: string;
   pose?: string;
   timestamp: string;
+  recognized?: boolean;
 }
 
 interface AttendanceSession {
@@ -74,13 +75,13 @@ export default function TeacherDashboardPage() {
 
     // 2. Prepare Rows (Students)
     const data = selectedClass.student_details.map(student => {
-      const row: any = {
+      const row: Record<string, string | number> = {
         "Student Name": student.fullName,
         "Student ID": student.studentID
       };
 
       let presentCount = 0;
-      sortedSessions.forEach((session, index) => {
+      sortedSessions.forEach((session) => {
         const record = session.records.find(r => 
           r.student_id === student.id || r.student_id === student.studentID
         );
@@ -141,13 +142,13 @@ export default function TeacherDashboardPage() {
         setSelectedClass(prev => {
           if (!prev && data.length > 0) return data[0];
           if (prev) {
-            const updated = data.find((c: any) => c.id === prev.id);
+            const updated = data.find((c: Class) => c.id === prev.id);
             return updated || data[0];
           }
           return null;
         });
-      } catch (err: any) {
-        setError(err.message)
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load classes")
       } finally {
         setLoading(false)
       }
@@ -209,18 +210,18 @@ export default function TeacherDashboardPage() {
     const total = selectedClass?.student_count || 0;
     if (!currentSessionData) return { total, present: 0, absent: 0, lastUpdate: "Attendance Pending" };
     
-    const filtered = currentSessionData.records.filter((r: any) => 
+    const filtered = currentSessionData.records.filter((r: AttendanceRecord) => 
       r.full_name && 
       r.full_name.toLowerCase() !== "unknown" && 
       !r.full_name.toLowerCase().includes("not registered") &&
       r.student_id && r.student_id.toLowerCase() !== "unknown"
     );
 
-    const present = filtered.filter(r => r.status === 'present').length;
-    const absent = filtered.filter(r => r.status === 'absent').length;
+    const present = filtered.filter(r => r.status === 'present' || r.recognized === true).length;
+    const absent = filtered.filter(r => r.status === 'absent' && r.recognized !== true).length;
     
     // Use actual record timestamp instead of scheduled session date
-    const actualRecord = currentSessionData.records.find((r: any) => r.status === 'present') || currentSessionData.records[0];
+    const actualRecord = currentSessionData.records.find((r: AttendanceRecord) => r.status === 'present') || currentSessionData.records[0];
     const lastUpdate = actualRecord 
       ? new Date(actualRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
       : "Attendance Pending";
@@ -573,15 +574,15 @@ export default function TeacherDashboardPage() {
                           const tabValue = `session-${sessionDateStr}-${session.startTime.replace(/[^a-zA-Z0-9]/g, '')}`;
 
                           // Filter out unknown students
-                          const filteredRecords = record ? record.records.filter((r: any) => 
+                          const filteredRecords = record ? record.records.filter((r: AttendanceRecord) => 
                             r.full_name && 
                             r.full_name.toLowerCase() !== "unknown" && 
                             !r.full_name.toLowerCase().includes("not registered") &&
                             r.student_id && r.student_id.toLowerCase() !== "unknown"
                           ) : [];
 
-                          const presentCount = filteredRecords.filter((r: any) => r.status === 'present').length;
-                          const absentCount = filteredRecords.filter((r: any) => r.status === 'absent').length;
+                          const presentCount = filteredRecords.filter((r: AttendanceRecord) => r.status === 'present' || r.recognized === true).length;
+                          const absentCount = filteredRecords.filter((r: AttendanceRecord) => r.status === 'absent' && r.recognized !== true).length;
 
                           return (
                             <TabsContent key={session.id} value={tabValue} className="mt-0 outline-none animate-in fade-in duration-500">
@@ -624,7 +625,10 @@ export default function TeacherDashboardPage() {
                               
                               {record ? (
                                 <div className="rounded-[2rem] border border-white/5 bg-black/20 overflow-hidden shadow-inner">
-                                  <AttendanceList records={filteredRecords} />
+                                  <AttendanceList records={filteredRecords.map(r => ({
+                                    ...r,
+                                    status: (r.status === 'present' || r.recognized === true) ? 'present' : 'absent'
+                                  }))} />
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-center justify-center py-24 text-slate-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">

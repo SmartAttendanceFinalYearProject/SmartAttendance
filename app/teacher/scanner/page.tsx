@@ -187,28 +187,23 @@ export default function TeacherScannerPage() {
       if (result.status === "success") {
         setRecords(prev => {
           const newRecords = [...prev];
-          result.results.forEach((newR: RecognitionRow) => {
+          // Only process results that are successfully recognized
+          const recognizedResults = (result.results || []).filter((r: RecognitionRow) => r.recognized === true);
+          
+          recognizedResults.forEach((newR: RecognitionRow) => {
             const idx = newRecords.findIndex(r => r.student_id === newR.student_id);
-            const isPresent = newR.recognized === true || newR.status === "present";
             
             if (idx >= 0) {
-              // Update if new result is "present" or if current is "unknown"
-              if (isPresent || newRecords[idx].status === "unknown") {
-                newRecords[idx] = { 
-                  ...newRecords[idx], 
-                  ...(newR as ScannerRecord),
-                  status: isPresent ? "present" : "absent",
-                  timestamp: newR.timestamp || new Date().toISOString()
-                };
-              }
-            } else if (isPresent) {
-              // If not found (e.g. unknown student not in roster), add them
-              newRecords.push({
+              // Only update if not already marked present, or to update latest emotion/pose
+              newRecords[idx] = { 
+                ...newRecords[idx], 
                 ...(newR as ScannerRecord),
                 status: "present",
                 timestamp: newR.timestamp || new Date().toISOString()
-              });
+              };
             }
+            // Note: If the person is recognized but NOT in the roster (idx < 0), 
+            // they are ignored and not displayed in the frontend.
           });
           return newRecords;
         });

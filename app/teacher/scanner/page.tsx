@@ -186,7 +186,14 @@ export default function TeacherScannerPage() {
       const result = await response.json()
       if (result.status === "success") {
         setRecords(prev => {
-          const newRecords = [...prev];
+          // Reset all records to absent first so only the current snapshot's results are shown
+          const newRecords = prev.map(r => ({
+            ...r,
+            status: "absent",
+            emotion: undefined,
+            pose: undefined
+          }));
+
           // Only process results that are successfully recognized
           const recognizedResults = (result.results || []).filter((r: RecognitionRow) => r.recognized === true);
           
@@ -194,7 +201,6 @@ export default function TeacherScannerPage() {
             const idx = newRecords.findIndex(r => r.student_id === newR.student_id);
             
             if (idx >= 0) {
-              // Only update if not already marked present, or to update latest emotion/pose
               newRecords[idx] = { 
                 ...newRecords[idx], 
                 ...(newR as ScannerRecord),
@@ -202,8 +208,6 @@ export default function TeacherScannerPage() {
                 timestamp: newR.timestamp || new Date().toISOString()
               };
             }
-            // Note: If the person is recognized but NOT in the roster (idx < 0), 
-            // they are ignored and not displayed in the frontend.
           });
           return newRecords;
         });

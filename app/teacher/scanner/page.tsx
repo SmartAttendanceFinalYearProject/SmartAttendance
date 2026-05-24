@@ -200,24 +200,37 @@ const startLiveStream = () => {
 
       if (data.results && Array.isArray(data.results)) {
         setRecords(prev => {
-          const newRecords = [...prev]
+          // Track recognized student IDs in the current frame
+          const recognizedIds = new Set<string>()
+          const resultByStudentId = new Map<string, any>()
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data.results.forEach((result: any) => {
-            if (result.recognized && result.student_id) {
-              const index = newRecords.findIndex(r => r.student_id === result.student_id)
-              if (index !== -1) {
-                newRecords[index] = {
-                  ...newRecords[index],
-                  status: "present",
-                  emotion: result.emotion || "neutral",
-                  pose: result.pose || "standing",
-                  timestamp: new Date().toISOString()
-                }
+          data.results.forEach((res: any) => {
+            if (res.recognized && res.student_id) {
+              recognizedIds.add(res.student_id)
+              resultByStudentId.set(res.student_id, res)
+            }
+          })
+
+          return prev.map(record => {
+            if (recognizedIds.has(record.student_id)) {
+              const res = resultByStudentId.get(record.student_id)
+              return {
+                ...record,
+                status: "present",
+                emotion: res.emotion || "neutral",
+                pose: res.pose || "standing",
+                timestamp: new Date().toISOString()
+              }
+            } else {
+              return {
+                ...record,
+                status: "absent",
+                emotion: undefined,
+                pose: undefined,
+                timestamp: record.timestamp // keep the previous timestamp or reset to now
               }
             }
           })
-          return newRecords
         })
       }
     } catch (e) {
@@ -443,6 +456,7 @@ const stopLiveStream = () => {
               {records.length > 0 && (
                 <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
                   {records.filter(r => 
+                    r.status === "present" &&
                     r.full_name && 
                     r.full_name.toLowerCase() !== "unknown" && 
                     !r.full_name.toLowerCase().includes("not registered")

@@ -71,18 +71,18 @@ export const LivenessCheck: React.FC<LivenessCheckProps> = ({ onComplete, onCanc
       timeout: 5,
     },
     {
-      id: "turn-left",
-      name: "Turn Left",
-      instruction: "Slowly turn your head to the LEFT",
-      icon: <ArrowLeft size={18} />,
+      id: "turn-right",
+      name: "Turn Right",
+      instruction: "Slowly turn your head to the RIGHT",
+      icon: <ArrowRight size={18} />,
       action: async (videoElement) => checkHeadTurn(videoElement, "left"),
       timeout: 5,
     },
     {
-      id: "turn-right",
-      name: "Turn Right",
-      instruction: "Now turn your head to the RIGHT",
-      icon: <ArrowRight size={18} />,
+      id: "turn-left",
+      name: "Turn Left",
+      instruction: "Now turn your head to the LEFT",
+      icon: <ArrowLeft size={18} />,
       action: async (videoElement) => checkHeadTurn(videoElement, "right"),
       timeout: 5,
     },
@@ -357,4 +357,4 @@ export const LivenessCheck: React.FC<LivenessCheckProps> = ({ onComplete, onCanc
       </div>
     </div>
   )
-}
+}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { Play, Square, Camera, ListChecks, BookOpen, Loader2, Image as ImageIcon } from "lucide-react"
+import { Play, Square, Camera, ListChecks, BookOpen, Loader2, Wifi } from "lucide-react"
 
 const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
@@ -48,16 +48,6 @@ interface ScannerRecord {
 /** Matches react-webcam imperative handle used by this page */
 type WebcamCaptureRef = { getScreenshot: () => string | null }
 
-interface RecognitionRow {
-  student_id: string
-  full_name?: string
-  status?: string
-  timestamp?: string
-  emotion?: string
-  pose?: string
-  recognized?: boolean
-}
-
 export default function TeacherScannerPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [classes, setClasses] = useState<Class[]>([])
@@ -65,13 +55,13 @@ export default function TeacherScannerPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>("")
   const [records, setRecords] = useState<ScannerRecord[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
-  const [isProcessing, setIsProcessing] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [approvalSuccess, setApprovalSuccess] = useState(false)
   const webcamRef = useRef<WebcamCaptureRef | null>(null)
 
   const selectedClass = classes.find(c => c.id === selectedClassId)
-  
+  const wsRef = useRef<WebSocket | null>(null)
+
   const sessions = useMemo(() => {
     if (!selectedClass) return []
     return generateScheduledSessions(
@@ -118,6 +108,7 @@ export default function TeacherScannerPage() {
     fetchClasses()
   }, [])
 
+
   // Initialize records when class is selected
   useEffect(() => {
     if (selectedClass) {
@@ -133,93 +124,7 @@ export default function TeacherScannerPage() {
     }
   }, [selectedClass])
 
-  const captureAndRecognize = async (fileOrEvent?: File | React.MouseEvent) => {
-    const file = fileOrEvent instanceof File ? fileOrEvent : undefined;
-    const currentSession = sessions.find(s => s.id === selectedSessionId)
-    if (!selectedClassId || !currentSession) {
-      if (!selectedSessionId) alert("Please select a session first")
-      return
-    }
-
-    setIsProcessing(true)
-    try {
-      let imageBlob: Blob;
-      let filename: string;
-
-      if (file) {
-        imageBlob = file;
-        filename = file.name;
-      } else {
-        if (!webcamRef.current) return;
-        const imageSrc = webcamRef.current.getScreenshot()
-        if (!imageSrc) return
-        
-        // Manual conversion of base64 to Blob to ensure compatibility
-        const byteString = atob(imageSrc.split(',')[1]);
-        const mimeString = imageSrc.split(',')[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
-        }
-        imageBlob = new Blob([ab], { type: mimeString });
-        filename = "attendance.jpg"
-      }
-      
-      const formData = new FormData()
-      formData.append("file", imageBlob, filename)
-      formData.append("class_id", selectedClassId)
-      // Send session info to prevent overwriting
-      formData.append("session_date", currentSession.date)
-      formData.append("start_time", currentSession.startTime)
-      formData.append("end_time", currentSession.endTime)
-
-      const token = localStorage.getItem("access_token")
-      const response = await fetch("http://127.0.0.1:8000/attendance/recognize", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData
-      })
-
-      const result = await response.json()
-      if (result.status === "success") {
-        setRecords(prev => {
-          // Reset all records to absent first so only the current snapshot's results are shown
-          const newRecords = prev.map(r => ({
-            ...r,
-            status: "absent",
-            emotion: undefined,
-            pose: undefined
-          }));
-
-          // Only process results that are successfully recognized
-          const recognizedResults = (result.results || []).filter((r: RecognitionRow) => r.recognized === true);
-          
-          recognizedResults.forEach((newR: RecognitionRow) => {
-            const idx = newRecords.findIndex(r => r.student_id === newR.student_id);
-            
-            if (idx >= 0) {
-              newRecords[idx] = { 
-                ...newRecords[idx], 
-                ...(newR as ScannerRecord),
-                status: "present",
-                timestamp: newR.timestamp || new Date().toISOString()
-              };
-            }
-          });
-          return newRecords;
-        });
-      }
-    } catch (err) {
-      console.error("Recognition failed:", err)
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const approveAttendance = async () => {
+const approveAttendance = async () => {
     const currentSession = sessions.find(s => s.id === selectedSessionId)
     if (!selectedClassId || !currentSession || records.length === 0) return
 
@@ -256,15 +161,107 @@ export default function TeacherScannerPage() {
     }
   }
 
-  const startAttendance = () => {
-    if (!selectedClassId || !selectedSessionId || !selectedClass) return
-    setIsRecording(true)
-    setApprovalSuccess(false)
+// Holds the setInterval ID for the frame-sending loop
+const frameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+const startLiveStream = () => {
+  if (!selectedClassId || !selectedSessionId) {
+    alert("Please select class and session first")
+    return
   }
 
-  const stopAttendance = () => {
+  setIsRecording(true)
+
+  const token = localStorage.getItem("access_token")
+  const ws = new WebSocket(`ws://127.0.0.1:8000/attendance/live?token=${token}`)
+
+  ws.onopen = () => console.log("✅ Live stream connected")
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+
+      // Backend signals it is ready → start sending frames
+      if (data.status === "ready") {
+        console.log("🟢 Backend ready – starting frame capture")
+        frameIntervalRef.current = setInterval(() => {
+          const wsNow = wsRef.current
+          if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return
+
+          const screenshot = webcamRef.current?.getScreenshot()
+          if (!screenshot) return
+
+          wsNow.send(JSON.stringify({ image: screenshot }))
+        }, 1000) // send one frame per second
+        return
+      }
+
+      console.log("📡 Live data received:", data)
+
+      if (data.results && Array.isArray(data.results)) {
+        setRecords(prev => {
+          // Track recognized student IDs in the current frame
+          const recognizedIds = new Set<string>()
+          const resultByStudentId = new Map<string, any>()
+
+          data.results.forEach((res: any) => {
+            if (res.recognized && res.student_id) {
+              recognizedIds.add(res.student_id)
+              resultByStudentId.set(res.student_id, res)
+            }
+          })
+
+          return prev.map(record => {
+            if (recognizedIds.has(record.student_id)) {
+              const res = resultByStudentId.get(record.student_id)
+              return {
+                ...record,
+                status: "present",
+                emotion: res.emotion || "neutral",
+                pose: res.pose || "standing",
+                timestamp: new Date().toISOString()
+              }
+            } else {
+              return {
+                ...record,
+                status: "absent",
+                emotion: undefined,
+                pose: undefined,
+                timestamp: record.timestamp // keep the previous timestamp or reset to now
+              }
+            }
+          })
+        })
+      }
+    } catch (e) {
+      console.error("Error parsing live data:", e)
+    }
+  }
+
+  ws.onerror = (error) => console.error("WebSocket error:", error)
+  ws.onclose = () => {
+    console.log("Live stream closed")
+    if (frameIntervalRef.current) {
+      clearInterval(frameIntervalRef.current)
+      frameIntervalRef.current = null
+    }
     setIsRecording(false)
   }
+
+  wsRef.current = ws
+}
+
+const stopLiveStream = () => {
+  if (frameIntervalRef.current) {
+    clearInterval(frameIntervalRef.current)
+    frameIntervalRef.current = null
+  }
+  if (wsRef.current) {
+    wsRef.current.close()
+    wsRef.current = null
+  }
+  setIsRecording(false)
+}
 
   if (loadingClasses) {
     return (
@@ -395,35 +392,20 @@ export default function TeacherScannerPage() {
                 <span className="text-sm font-bold text-white">Live Classroom Feed</span>
               </div>
               <div className="flex items-center gap-2">
-                {isProcessing && <Loader2 size={14} className="text-blue-400 animate-spin" />}
+              {isRecording && (
+                  <Wifi size={14} className="text-emerald-400 animate-pulse" />
+                )}
                 <span className={`text-[10px] uppercase tracking-widest font-black px-3 py-1 rounded-full border ${
                   isRecording
                     ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
                     : "text-slate-500 bg-white/5 border-white/10"
                 }`}>
-                  {isRecording ? "Processing" : "Standby"}
+                  {isRecording ? "Live" : "Standby"}
                 </span>
               </div>
             </div>
             <div className="p-6">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 aspect-video bg-black">
-                {/* Photo Import Icon */}
-                <div className="absolute top-4 right-4 z-20">
-                  <label className="cursor-pointer p-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white hover:bg-blue-600 hover:border-blue-500 transition-all backdrop-blur-md shadow-2xl flex items-center justify-center group" title="Import image from files">
-                    <ImageIcon size={20} className="group-hover:scale-110 transition-transform" />
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) captureAndRecognize(file)
-                        e.target.value = "" // Reset to allow re-uploading same file
-                      }}
-                    />
-                  </label>
-                </div>
-
                 <Webcam
                   audio={false}
                   ref={webcamRef as React.RefObject<WebcamCaptureRef>}
@@ -442,36 +424,24 @@ export default function TeacherScannerPage() {
                 )}
               </div>
               
-              <div className="flex justify-center items-center gap-4 mt-8">
-                {!isRecording ? (
-                  <Button
-                    onClick={startAttendance}
-                    disabled={!selectedClassId}
-                    className="h-14 bg-blue-600 hover:bg-blue-500 text-white font-black gap-3 px-10 shadow-xl shadow-blue-600/20 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider"
-                  >
-                    <Play size={18} fill="currentColor" />
-                    Start Session
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={stopAttendance}
-                    className="h-14 bg-rose-600 hover:bg-rose-500 text-white font-black gap-3 px-10 shadow-xl shadow-rose-600/20 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider"
-                  >
-                    <Square size={18} fill="currentColor" />
-                    End Session
-                  </Button>
-                )}
-                
+            <div className="flex justify-center items-center gap-4 mt-8">
+              {!isRecording ? (
                 <Button
-                  onClick={() => captureAndRecognize()}
-                  disabled={!isRecording || isProcessing}
-                  variant="outline"
-                  className="h-14 border-white/10 bg-white/5 text-white font-bold gap-3 px-8 rounded-2xl hover:bg-white/10 disabled:opacity-50 transition-all"
+                  onClick={startLiveStream}
+                  disabled={!selectedClassId || !selectedSessionId}
+                  className="h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-black gap-3 px-10"
                 >
-                  <Camera size={18} />
-                  Snapshot
+                  <Play size={18} /> Start Live Attendance
                 </Button>
-              </div>
+              ) : (
+                <Button
+                  onClick={stopLiveStream}
+                  className="h-14 bg-rose-600 hover:bg-rose-500 text-white font-black gap-3 px-10"
+                >
+                  <Square size={18} /> Stop Live Session
+                </Button>
+              )}
+            </div>
             </div>
           </div>
         </div>
@@ -486,6 +456,7 @@ export default function TeacherScannerPage() {
               {records.length > 0 && (
                 <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
                   {records.filter(r => 
+                    r.status === "present" &&
                     r.full_name && 
                     r.full_name.toLowerCase() !== "unknown" && 
                     !r.full_name.toLowerCase().includes("not registered")

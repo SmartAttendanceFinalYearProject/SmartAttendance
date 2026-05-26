@@ -108,7 +108,6 @@ export default function TeacherScannerPage() {
     fetchClasses()
   }, [])
 
-
   // Initialize records when class is selected
   useEffect(() => {
     if (selectedClass) {
@@ -410,7 +409,13 @@ const stopLiveStream = () => {
                   audio={false}
                   ref={webcamRef as React.RefObject<WebcamCaptureRef>}
                   screenshotFormat="image/jpeg"
-                  videoConstraints={{ facingMode: "user" }}
+                  videoConstraints={{
+                    width: 640,
+                    height: 480,
+                    facingMode: "user"
+                  }}
+                  screenshotWidth={640}
+                  screenshotHeight={480}
                   className="w-full h-full object-cover"
                 />
                 {!isRecording && (

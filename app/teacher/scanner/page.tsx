@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Play, Square, Camera, ListChecks, BookOpen, Loader2, Wifi } from "lucide-react"
+import { toast } from "sonner"
 
 const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
@@ -165,9 +166,35 @@ const frameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
 const startLiveStream = () => {
   if (!selectedClassId || !selectedSessionId) {
-    alert("Please select class and session first")
+    toast.error("Please select class and session first")
     return
   }
+
+  // ====================== DATE VALIDATION ======================
+  if (!selectedClass) {
+    toast.error("Class information not found")
+    return
+  }
+
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+
+  const classStartDate = new Date(selectedClass.start_date);
+  const classEndDate = new Date(selectedClass.end_date);
+
+  classStartDate.setHours(0, 0, 0, 0);
+  classEndDate.setHours(23, 59, 59, 999);
+
+  if (currentDate < classStartDate || currentDate > classEndDate) {
+    toast.error(
+      `Cannot take attendance!\n\n` +
+      `This class runs from ${classStartDate.toLocaleDateString()} ` +
+      `to ${classEndDate.toLocaleDateString()}\n\n` +
+      `Today's date (${currentDate.toLocaleDateString()}) is outside this period.`
+    );
+    return;
+  }
+  // ============================================================
 
   setIsRecording(true)
 
@@ -180,18 +207,17 @@ const startLiveStream = () => {
     try {
       const data = JSON.parse(event.data)
 
-      // Backend signals it is ready → start sending frames
       if (data.status === "ready") {
         console.log("🟢 Backend ready – starting frame capture")
         frameIntervalRef.current = setInterval(() => {
-            const wsNow = wsRef.current
-            if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return
+          const wsNow = wsRef.current
+          if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return
 
-            const screenshot = webcamRef.current?.getScreenshot()
-            if (!screenshot) return
+          const screenshot = webcamRef.current?.getScreenshot()
+          if (!screenshot) return
 
-            wsNow.send(JSON.stringify({ image: screenshot }))
-              }, 8000)   
+          wsNow.send(JSON.stringify({ image: screenshot }))
+        }, 8000)
         return
       }
 
@@ -199,37 +225,22 @@ const startLiveStream = () => {
 
       if (data.results && Array.isArray(data.results)) {
         setRecords(prev => {
-          // Track recognized student IDs in the current frame
-          const recognizedIds = new Set<string>()
-          const resultByStudentId = new Map<string, any>()
-
+          const newRecords = [...prev]
           data.results.forEach((res: any) => {
             if (res.recognized && res.student_id) {
-              recognizedIds.add(res.student_id)
-              resultByStudentId.set(res.student_id, res)
-            }
-          })
-
-          return prev.map(record => {
-            if (recognizedIds.has(record.student_id)) {
-              const res = resultByStudentId.get(record.student_id)
-              return {
-                ...record,
-                status: "present",
-                emotion: res.emotion || "neutral",
-                pose: res.pose || "standing",
-                timestamp: new Date().toISOString()
-              }
-            } else {
-              return {
-                ...record,
-                status: "absent",
-                emotion: undefined,
-                pose: undefined,
-                timestamp: record.timestamp // keep the previous timestamp or reset to now
+              const index = newRecords.findIndex(r => r.student_id === res.student_id)
+              if (index !== -1) {
+                newRecords[index] = {
+                  ...newRecords[index],
+                  status: "present",
+                  emotion: res.emotion || "neutral",
+                  pose: res.pose || "standing",
+                  timestamp: new Date().toISOString()
+                }
               }
             }
           })
+          return newRecords
         })
       }
     } catch (e) {

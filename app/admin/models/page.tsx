@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 type Tab = "subjects" | "teachers" | "classes" | "students"
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
-type Student = { id: string; fullName: string; studentID: string; batch?: string; class_year?: string; semester?: string; section?: string; department?: string }
+type Student = { id: string; fullName: string; studentID:  string; batch?: string; class_year?: string; semester?: string; section?: string; email?: string; department?: string }
 type DaySchedule = { day: string; start_time: string; end_time: string }
 type ClassItem = {
   id: string
@@ -67,7 +67,7 @@ type ViewItem =
   | { type: "subjects"; data: Subject }
   | { type: "teachers"; data: Teacher }
   | { type: "classes"; data: ClassItem }
-
+  | { type: "students"; data: Student }   
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong"
 }
@@ -95,6 +95,20 @@ export default function AdminModelsPage() {
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null)
   const [isSubmittingTeacher, setIsSubmittingTeacher] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+const [studentForm, setStudentForm] = useState({
+  fullName: "",
+  department: "",
+  section: "",
+  email: "",
+  batch: "",
+  class_year: "",
+  semester: "",
+});
+
+const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+const [showStudentForm, setShowStudentForm] = useState(false);
+const [isSubmittingStudent, setIsSubmittingStudent] = useState(false);
 
   const [classForm, setClassForm] = useState(emptyClassForm)
   const [editingClassId, setEditingClassId] = useState<string | null>(null)
@@ -145,6 +159,44 @@ export default function AdminModelsPage() {
   useEffect(() => {
     void fetchAll()
   }, [fetchAll])
+  const submitStudent = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsSubmittingStudent(true)
+  try {
+    const endpoint = `${API}/admin/students/${editingStudentId}`
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeader },
+      body: JSON.stringify(studentForm),
+    })
+
+    if (!res.ok) throw new Error((await res.json()).detail || "Failed to update")
+
+    toast.success(editingStudentId ? "Student updated successfully" : "Student registered")
+    setShowStudentForm(false)
+    setEditingStudentId(null)
+    await fetchAll()
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    setIsSubmittingStudent(false)
+  }
+}
+
+const removeStudent = async (studentID: string) => {
+  if (!confirm("Are you sure you want to delete this student?")) return
+  try {
+    const res = await fetch(`${API}/admin/students/${studentID}`, {
+      method: "DELETE",
+      headers: authHeader
+    })
+    if (!res.ok) throw new Error("Delete failed")
+    toast.success("Student deleted successfully")
+    await fetchAll()
+  } catch {
+    toast.error("Failed to delete student")
+  }
+}
 
   const submitSubject = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -854,76 +906,75 @@ export default function AdminModelsPage() {
       )}
 {/* ══════════════ STUDENTS TAB ══════════════ */}
 {activeTab === "students" && (
-  <div className="space-y-4">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl font-semibold">Student Performance</h2>
-      <Input 
-        placeholder="Search students..." 
-        className="max-w-xs"
-        value={studentSearch}
-        onChange={(e) => setStudentSearch(e.target.value)}
-      />
+  <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="flex justify-end mb-2">
+      <Button onClick={() => setShowStudentForm(true)} className="gap-2">
+        <Plus size={16} /> Register New Student
+      </Button>
     </div>
 
-    <div className="grid gap-4">
-      {studentPerformance
+    {students.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10">
+        <div className="w-16 h-16 rounded-full bg-blue-500/5 flex items-center justify-center mb-4">
+          <Users size={32} className="text-slate-600" />
+        </div>
+        <p className="text-white font-bold mb-1">No Students Registered</p>
+        <Button onClick={() => setShowStudentForm(true)} variant="outline" className="gap-2">
+          <Plus size={16} /> Register First Student
+        </Button>
+      </div>
+    ) : (
+      students
         .filter(s => 
           !studentSearch || 
-          s.full_name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-          s.studentID.toLowerCase().includes(studentSearch.toLowerCase())
+          s.fullName?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+          s.studentID?.toLowerCase().includes(studentSearch.toLowerCase())
         )
         .map((student) => (
-          <Card key={student.student_id} className="bg-card/30 border-white/5 hover:bg-card/40">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold text-lg">{student.full_name}</p>
-                  <p className="text-sm text-slate-400 font-mono">{student.studentID}</p>
-                  <div className="flex gap-2 mt-1">
-                    {student.department && <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">{student.department}</span>}
-                    {student.batch && <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded">Batch {student.batch}</span>}
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className={`text-3xl font-bold ${student.overall_attendance >= 85 ? 'text-emerald-400' : student.overall_attendance >= 70 ? 'text-amber-400' : 'text-rose-400'}`}>
-                    {student.overall_attendance}%
-                  </div>
-                  <p className="text-xs text-slate-500">Overall Attendance</p>
+          <Card key={student.id} className="bg-card/30 border-white/5 hover:bg-card/40 group">
+            <CardContent className="py-4 flex items-center justify-between">
+              <div>
+                <p className="text-white font-semibold group-hover:text-blue-400">{student.fullName}</p>
+                <p className="text-xs text-slate-400 font-mono">{student.studentID}</p>
+                <div className="flex gap-2 mt-1 flex-wrap">
+                  {student.department && <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">{student.department}</span>}
+                  {student.batch && <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded">B{student.batch}</span>}
+                  {student.class_year && <span className="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded">Yr {student.class_year}</span>}
                 </div>
               </div>
 
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-4"
-                onClick={() => setSelectedStudent(student)}
-              >
-                View Details & History
-              </Button>
-
-              {/* Class Performance Breakdown */}
-              {student.classes.length > 0 && (
-                <div className="mt-6">
-                  <p className="text-xs uppercase text-slate-500 mb-2">Class Performance</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {student.classes.slice(0, 4).map((cls, i) => (
-                      <div key={i} className="bg-white/5 p-3 rounded-lg text-sm">
-                        <p className="font-medium">{cls.class_name}</p>
-                        <p className="text-xs text-slate-400">{cls.subject_name}</p>
-                        <div className="flex justify-between mt-2">
-                          <span className="text-emerald-400 font-mono">{cls.attendance_rate}%</span>
-                          <span className="text-slate-500 text-xs">{cls.present_count}/{cls.total_sessions}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => setViewingItem({ type: "students", data: student })}>
+                  <Eye size={14} />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-white/5 hover:bg-white/10"
+                  onClick={() => {
+                    setEditingStudentId(student.studentID)
+                    setStudentForm({
+                      fullName: student.fullName || "",
+                      department: student.department || "",
+                      section: student.section || "",
+                      email: student.email || "",
+                      batch: student.batch || "",
+                      class_year: student.class_year || "",
+                      semester: student.semester || "",
+                    })
+                    setShowStudentForm(true)
+                  }}
+                >
+                  <Pencil size={14} />
+                </Button>
+                <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeStudent(student.studentID)}>
+                  <Trash2 size={14} />
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        ))}
-    </div>
+        ))
+    )}
   </div>
 )}
       {/* ── View Detail Modal ── */}
@@ -964,7 +1015,40 @@ export default function AdminModelsPage() {
                   )}
                 </div>
               </div>
-            )}
+            )}{viewingItem?.type === "students" && (
+  <div className="grid gap-4">
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Full Name</span>
+      <span className="col-span-2 font-medium">{viewingItem.data.fullName}</span>
+    </div>
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Student ID</span>
+      <span className="col-span-2 font-mono text-blue-400">{viewingItem.data.studentID}</span>
+    </div>
+    {viewingItem.data.email && (
+      <div className="grid grid-cols-3 gap-1">
+        <span className="text-slate-400 text-sm">Email</span>
+        <span className="col-span-2">{viewingItem.data.email}</span>
+      </div>
+    )}
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Department</span>
+      <span className="col-span-2">{viewingItem.data.department || "N/A"}</span>
+    </div>
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Section</span>
+      <span className="col-span-2">{viewingItem.data.section || "N/A"}</span>
+    </div>
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Batch / Year / Semester</span>
+      <span className="col-span-2">
+        {viewingItem.data.batch ? `Batch ${viewingItem.data.batch}` : ""} 
+        {viewingItem.data.class_year ? ` • Year ${viewingItem.data.class_year}` : ""} 
+        {viewingItem.data.semester ? ` • Sem ${viewingItem.data.semester}` : ""}
+      </span>
+    </div>
+  </div>
+)}
 
             {viewingItem?.type === "teachers" && (
               <div className="grid gap-4">
@@ -1067,6 +1151,55 @@ export default function AdminModelsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Student Edit Form Modal */}
+<Dialog open={showStudentForm} onOpenChange={() => { setShowStudentForm(false); setEditingStudentId(null); }}>
+  <DialogContent className="bg-[#0b1426] border-white/10 text-white max-w-md">
+    <DialogHeader>
+      <DialogTitle>{editingStudentId ? "Edit Student" : "Register New Student"}</DialogTitle>
+    </DialogHeader>
+    <form onSubmit={submitStudent} className="space-y-4 mt-4">
+      <div className="space-y-1">
+        <Label>Full Name</Label>
+        <Input value={studentForm.fullName} onChange={e => setStudentForm(p => ({...p, fullName: e.target.value}))} required />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label>Department</Label>
+          <Input value={studentForm.department} onChange={e => setStudentForm(p => ({...p, department: e.target.value}))} />
+        </div>
+        <div className="space-y-1">
+          <Label>Section</Label>
+          <Input value={studentForm.section} onChange={e => setStudentForm(p => ({...p, section: e.target.value}))} />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label>Email</Label>
+        <Input type="email" value={studentForm.email} onChange={e => setStudentForm(p => ({...p, email: e.target.value}))} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1">
+          <Label>Batch</Label>
+          <Input value={studentForm.batch} onChange={e => setStudentForm(p => ({...p, batch: e.target.value}))} />
+        </div>
+        <div className="space-y-1">
+          <Label>Year</Label>
+          <Input value={studentForm.class_year} onChange={e => setStudentForm(p => ({...p, class_year: e.target.value}))} />
+        </div>
+        <div className="space-y-1">
+          <Label>Semester</Label>
+          <Input value={studentForm.semester} onChange={e => setStudentForm(p => ({...p, semester: e.target.value}))} />
+        </div>
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isSubmittingStudent}>
+        {isSubmittingStudent ? "Saving..." : editingStudentId ? "Update Student" : "Register Student"}
+      </Button>
+    </form>
+  </DialogContent>
+</Dialog>
     </div>
   )
 }

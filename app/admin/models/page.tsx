@@ -907,10 +907,14 @@ const removeStudent = async (studentID: string) => {
 {/* ══════════════ STUDENTS TAB ══════════════ */}
 {activeTab === "students" && (
   <div className="space-y-4 max-w-2xl mx-auto">
-    <div className="flex justify-end mb-2">
-      <Button onClick={() => setShowStudentForm(true)} className="gap-2">
-        <Plus size={16} /> Register New Student
-      </Button>
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-xl font-semibold">All Students</h2>
+      <Input 
+        placeholder="Search students..." 
+        className="max-w-xs"
+        value={studentSearch}
+        onChange={(e) => setStudentSearch(e.target.value)}
+      />
     </div>
 
     {students.length === 0 ? (
@@ -918,10 +922,7 @@ const removeStudent = async (studentID: string) => {
         <div className="w-16 h-16 rounded-full bg-blue-500/5 flex items-center justify-center mb-4">
           <Users size={32} className="text-slate-600" />
         </div>
-        <p className="text-white font-bold mb-1">No Students Registered</p>
-        <Button onClick={() => setShowStudentForm(true)} variant="outline" className="gap-2">
-          <Plus size={16} /> Register First Student
-        </Button>
+        <p className="text-white font-bold mb-1">No Students Found</p>
       </div>
     ) : (
       students
@@ -931,22 +932,33 @@ const removeStudent = async (studentID: string) => {
           s.studentID?.toLowerCase().includes(studentSearch.toLowerCase())
         )
         .map((student) => (
-          <Card key={student.id} className="bg-card/30 border-white/5 hover:bg-card/40 group">
+          <Card key={student.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
             <CardContent className="py-4 flex items-center justify-between">
               <div>
-                <p className="text-white font-semibold group-hover:text-blue-400">{student.fullName}</p>
+                <p className="text-white font-semibold group-hover:text-blue-400 transition-colors">
+                  {student.fullName}
+                </p>
                 <p className="text-xs text-slate-400 font-mono">{student.studentID}</p>
                 <div className="flex gap-2 mt-1 flex-wrap">
                   {student.department && <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">{student.department}</span>}
                   {student.batch && <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded">B{student.batch}</span>}
                   {student.class_year && <span className="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded">Yr {student.class_year}</span>}
+                  {student.semester && <span className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">Sem {student.semester}</span>}
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="border-white/5 hover:bg-white/10" onClick={() => setViewingItem({ type: "students", data: student })}>
+                {/* View Button */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-white/5 hover:bg-white/10"
+                  onClick={() => setViewingItem({ type: "students", data: student })}
+                >
                   <Eye size={14} />
                 </Button>
+
+                {/* Edit Button */}
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -967,7 +979,14 @@ const removeStudent = async (studentID: string) => {
                 >
                   <Pencil size={14} />
                 </Button>
-                <Button variant="destructive" size="sm" className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white" onClick={() => removeStudent(student.studentID)}>
+
+                {/* Delete Button */}
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white"
+                  onClick={() => removeStudent(student.studentID)}
+                >
                   <Trash2 size={14} />
                 </Button>
               </div>
@@ -1151,55 +1170,7 @@ const removeStudent = async (studentID: string) => {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Student Edit Form Modal */}
-<Dialog open={showStudentForm} onOpenChange={() => { setShowStudentForm(false); setEditingStudentId(null); }}>
-  <DialogContent className="bg-[#0b1426] border-white/10 text-white max-w-md">
-    <DialogHeader>
-      <DialogTitle>{editingStudentId ? "Edit Student" : "Register New Student"}</DialogTitle>
-    </DialogHeader>
-    <form onSubmit={submitStudent} className="space-y-4 mt-4">
-      <div className="space-y-1">
-        <Label>Full Name</Label>
-        <Input value={studentForm.fullName} onChange={e => setStudentForm(p => ({...p, fullName: e.target.value}))} required />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label>Department</Label>
-          <Input value={studentForm.department} onChange={e => setStudentForm(p => ({...p, department: e.target.value}))} />
-        </div>
-        <div className="space-y-1">
-          <Label>Section</Label>
-          <Input value={studentForm.section} onChange={e => setStudentForm(p => ({...p, section: e.target.value}))} />
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <Label>Email</Label>
-        <Input type="email" value={studentForm.email} onChange={e => setStudentForm(p => ({...p, email: e.target.value}))} />
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1">
-          <Label>Batch</Label>
-          <Input value={studentForm.batch} onChange={e => setStudentForm(p => ({...p, batch: e.target.value}))} />
-        </div>
-        <div className="space-y-1">
-          <Label>Year</Label>
-          <Input value={studentForm.class_year} onChange={e => setStudentForm(p => ({...p, class_year: e.target.value}))} />
-        </div>
-        <div className="space-y-1">
-          <Label>Semester</Label>
-          <Input value={studentForm.semester} onChange={e => setStudentForm(p => ({...p, semester: e.target.value}))} />
-        </div>
-      </div>
-
-      <Button type="submit" className="w-full" disabled={isSubmittingStudent}>
-        {isSubmittingStudent ? "Saving..." : editingStudentId ? "Update Student" : "Register Student"}
-      </Button>
-    </form>
-  </DialogContent>
-</Dialog>
+     
     </div>
   )
 }

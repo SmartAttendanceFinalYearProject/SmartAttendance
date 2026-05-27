@@ -161,6 +161,26 @@ const approveAttendance = async () => {
     }
   }
 
+const handleManualRefresh = () => {
+  if (!selectedClass) {
+    toast.error("No class selected");
+    return;
+  }
+
+  // Reset all students to absent and clear emotion/pose
+  const resetRecords = selectedClass.student_details.map(student => ({
+    student_id: student.studentID,
+    full_name: student.fullName,
+    status: "absent",
+    timestamp: new Date().toISOString(),
+    emotion: undefined,
+    pose: undefined
+  }));
+
+  setRecords(resetRecords);
+  toast.success("Attendance table has been reset (all absent)");
+};
+
 // Holds the setInterval ID for the frame-sending loop
 const frameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -483,56 +503,15 @@ const stopLiveStream = () => {
                 )}
 
                 {/* Refresh Button */}
-                <Button
-                  onClick={() => {
-                    // Trigger a manual snapshot
-                    const screenshot = webcamRef.current?.getScreenshot();
-                    if (screenshot) {
-                      const formData = new FormData();
-                      formData.append("file", 
-                        new Blob([atob(screenshot.split(',')[1])], { type: 'image/jpeg' }), 
-                        "refresh.jpg"
-                      );
-
-                      fetch("http://127.0.0.1:8000/attendance/recognize", {
-                        method: "POST",
-                        headers: {
-                          "Authorization": `Bearer ${localStorage.getItem("access_token")}`
-                        },
-                        body: formData
-                      })
-                      .then(res => res.json())
-                      .then(result => {
-                        if (result.status === "success" && result.results) {
-                          setRecords(prev => {
-                            const newRecords = [...prev];
-                            result.results.forEach((res: any) => {
-                              if (res.recognized && res.student_id) {
-                                const idx = newRecords.findIndex(r => r.student_id === res.student_id);
-                                if (idx !== -1) {
-                                  newRecords[idx] = {
-                                    ...newRecords[idx],
-                                    status: "present",
-                                    emotion: res.emotion || "neutral",
-                                    pose: res.pose || "standing",
-                                    timestamp: new Date().toISOString()
-                                  };
-                                }
-                              }
-                            });
-                            return newRecords;
-                          });
-                        }
-                      })
-                      .catch(err => console.error("Refresh failed:", err));
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs border-white/20 hover:bg-white/10"
-                >
-                  ↻ Refresh
-                </Button>
+                {/* Refresh Button */}
+                  <Button
+                    onClick={handleManualRefresh}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs border-white/20 hover:bg-white/10 flex items-center gap-1"
+                  >
+                    ↻ Reset Table
+                  </Button>
               </div>
             </div>
             <div className="flex-1 flex flex-col">

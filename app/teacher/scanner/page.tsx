@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Play, Square, Camera, ListChecks, BookOpen, Loader2, Wifi } from "lucide-react"
-import { toast } from "sonner"
 
 const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
@@ -109,6 +108,7 @@ export default function TeacherScannerPage() {
     fetchClasses()
   }, [])
 
+
   // Initialize records when class is selected
   useEffect(() => {
     if (selectedClass) {
@@ -161,60 +161,14 @@ const approveAttendance = async () => {
     }
   }
 
-const handleManualRefresh = () => {
-  if (!selectedClass) {
-    toast.error("No class selected");
-    return;
-  }
-
-  // Reset all students to absent and clear emotion/pose
-  const resetRecords = selectedClass.student_details.map(student => ({
-    student_id: student.studentID,
-    full_name: student.fullName,
-    status: "absent",
-    timestamp: new Date().toISOString(),
-    emotion: undefined,
-    pose: undefined
-  }));
-
-  setRecords(resetRecords);
-  toast.success("Attendance table has been reset (all absent)");
-};
-
 // Holds the setInterval ID for the frame-sending loop
 const frameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
 const startLiveStream = () => {
   if (!selectedClassId || !selectedSessionId) {
-    toast.error("Please select class and session first")
+    alert("Please select class and session first")
     return
   }
-
-  // ====================== DATE VALIDATION ======================
-  if (!selectedClass) {
-    toast.error("Class information not found")
-    return
-  }
-
-  const currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0);
-
-  const classStartDate = new Date(selectedClass.start_date);
-  const classEndDate = new Date(selectedClass.end_date);
-
-  classStartDate.setHours(0, 0, 0, 0);
-  classEndDate.setHours(23, 59, 59, 999);
-
-  if (currentDate < classStartDate || currentDate > classEndDate) {
-    toast.error(
-      `Cannot take attendance!\n\n` +
-      `This class runs from ${classStartDate.toLocaleDateString()} ` +
-      `to ${classEndDate.toLocaleDateString()}\n\n` +
-      `Today's date (${currentDate.toLocaleDateString()}) is outside this period.`
-    );
-    return;
-  }
-  // ============================================================
 
   setIsRecording(true)
 
@@ -227,6 +181,7 @@ const startLiveStream = () => {
     try {
       const data = JSON.parse(event.data)
 
+      // Backend signals it is ready → start sending frames
       if (data.status === "ready") {
         console.log("🟢 Backend ready – starting frame capture")
         frameIntervalRef.current = setInterval(() => {
@@ -237,7 +192,7 @@ const startLiveStream = () => {
           if (!screenshot) return
 
           wsNow.send(JSON.stringify({ image: screenshot }))
-        }, 8000)
+        }, 1000) // send one frame per second
         return
       }
 
@@ -245,22 +200,37 @@ const startLiveStream = () => {
 
       if (data.results && Array.isArray(data.results)) {
         setRecords(prev => {
-          const newRecords = [...prev]
+          // Track recognized student IDs in the current frame
+          const recognizedIds = new Set<string>()
+          const resultByStudentId = new Map<string, any>()
+
           data.results.forEach((res: any) => {
             if (res.recognized && res.student_id) {
-              const index = newRecords.findIndex(r => r.student_id === res.student_id)
-              if (index !== -1) {
-                newRecords[index] = {
-                  ...newRecords[index],
-                  status: "present",
-                  emotion: res.emotion || "neutral",
-                  pose: res.pose || "standing",
-                  timestamp: new Date().toISOString()
-                }
+              recognizedIds.add(res.student_id)
+              resultByStudentId.set(res.student_id, res)
+            }
+          })
+
+          return prev.map(record => {
+            if (recognizedIds.has(record.student_id)) {
+              const res = resultByStudentId.get(record.student_id)
+              return {
+                ...record,
+                status: "present",
+                emotion: res.emotion || "neutral",
+                pose: res.pose || "standing",
+                timestamp: new Date().toISOString()
+              }
+            } else {
+              return {
+                ...record,
+                status: "absent",
+                emotion: undefined,
+                pose: undefined,
+                timestamp: record.timestamp // keep the previous timestamp or reset to now
               }
             }
           })
-          return newRecords
         })
       }
     } catch (e) {
@@ -440,13 +410,7 @@ const stopLiveStream = () => {
                   audio={false}
                   ref={webcamRef as React.RefObject<WebcamCaptureRef>}
                   screenshotFormat="image/jpeg"
-                  videoConstraints={{
-                    width: 640,
-                    height: 480,
-                    facingMode: "user"
-                  }}
-                  screenshotWidth={640}
-                  screenshotHeight={480}
+                  videoConstraints={{ facingMode: "user" }}
                   className="w-full h-full object-cover"
                 />
                 {!isRecording && (
@@ -489,30 +453,16 @@ const stopLiveStream = () => {
                 <ListChecks size={16} className="text-blue-400" />
                 <span className="text-sm font-bold text-white">Real-time Detection</span>
               </div>
-
-              <div className="flex items-center gap-3">
-                {records.length > 0 && (
-                  <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
-                    {records.filter(r => 
-                      r.status === "present" &&
-                      r.full_name && 
-                      r.full_name.toLowerCase() !== "unknown" && 
-                      !r.full_name.toLowerCase().includes("not registered")
-                    ).length} IDENTIFIED
-                  </span>
-                )}
-
-                {/* Refresh Button */}
-                {/* Refresh Button */}
-                  <Button
-                    onClick={handleManualRefresh}
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs border-white/20 hover:bg-white/10 flex items-center gap-1"
-                  >
-                    ↻ Reset Table
-                  </Button>
-              </div>
+              {records.length > 0 && (
+                <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
+                  {records.filter(r => 
+                    r.status === "present" &&
+                    r.full_name && 
+                    r.full_name.toLowerCase() !== "unknown" && 
+                    !r.full_name.toLowerCase().includes("not registered")
+                  ).length} IDENTIFIED
+                </span>
+              )}
             </div>
             <div className="flex-1 flex flex-col">
               <div className="flex-1 overflow-hidden">

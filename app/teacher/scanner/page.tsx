@@ -458,16 +458,71 @@ const stopLiveStream = () => {
                 <ListChecks size={16} className="text-blue-400" />
                 <span className="text-sm font-bold text-white">Real-time Detection</span>
               </div>
-              {records.length > 0 && (
-                <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
-                  {records.filter(r => 
-                    r.status === "present" &&
-                    r.full_name && 
-                    r.full_name.toLowerCase() !== "unknown" && 
-                    !r.full_name.toLowerCase().includes("not registered")
-                  ).length} IDENTIFIED
-                </span>
-              )}
+
+              <div className="flex items-center gap-3">
+                {records.length > 0 && (
+                  <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
+                    {records.filter(r => 
+                      r.status === "present" &&
+                      r.full_name && 
+                      r.full_name.toLowerCase() !== "unknown" && 
+                      !r.full_name.toLowerCase().includes("not registered")
+                    ).length} IDENTIFIED
+                  </span>
+                )}
+
+                {/* Refresh Button */}
+                <Button
+                  onClick={() => {
+                    // Trigger a manual snapshot
+                    const screenshot = webcamRef.current?.getScreenshot();
+                    if (screenshot) {
+                      const formData = new FormData();
+                      formData.append("file", 
+                        new Blob([atob(screenshot.split(',')[1])], { type: 'image/jpeg' }), 
+                        "refresh.jpg"
+                      );
+
+                      fetch("http://127.0.0.1:8000/attendance/recognize", {
+                        method: "POST",
+                        headers: {
+                          "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                        },
+                        body: formData
+                      })
+                      .then(res => res.json())
+                      .then(result => {
+                        if (result.status === "success" && result.results) {
+                          setRecords(prev => {
+                            const newRecords = [...prev];
+                            result.results.forEach((res: any) => {
+                              if (res.recognized && res.student_id) {
+                                const idx = newRecords.findIndex(r => r.student_id === res.student_id);
+                                if (idx !== -1) {
+                                  newRecords[idx] = {
+                                    ...newRecords[idx],
+                                    status: "present",
+                                    emotion: res.emotion || "neutral",
+                                    pose: res.pose || "standing",
+                                    timestamp: new Date().toISOString()
+                                  };
+                                }
+                              }
+                            });
+                            return newRecords;
+                          });
+                        }
+                      })
+                      .catch(err => console.error("Refresh failed:", err));
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-white/20 hover:bg-white/10"
+                >
+                  ↻ Refresh
+                </Button>
+              </div>
             </div>
             <div className="flex-1 flex flex-col">
               <div className="flex-1 overflow-hidden">

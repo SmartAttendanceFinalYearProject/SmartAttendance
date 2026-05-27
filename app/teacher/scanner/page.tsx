@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Play, Square, Camera, ListChecks, BookOpen, Loader2, Wifi } from "lucide-react"
+import { toast } from "sonner"
 
 const AttendanceList = dynamic(() => import("@/components/AttendanceList"), {
   loading: () => <div className="h-64 w-full animate-pulse bg-white/5 rounded-2xl" />,
@@ -108,7 +109,6 @@ export default function TeacherScannerPage() {
     fetchClasses()
   }, [])
 
-
   // Initialize records when class is selected
   useEffect(() => {
     if (selectedClass) {
@@ -166,9 +166,35 @@ const frameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
 const startLiveStream = () => {
   if (!selectedClassId || !selectedSessionId) {
-    alert("Please select class and session first")
+    toast.error("Please select class and session first")
     return
   }
+
+  // ====================== DATE VALIDATION ======================
+  if (!selectedClass) {
+    toast.error("Class information not found")
+    return
+  }
+
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+
+  const classStartDate = new Date(selectedClass.start_date);
+  const classEndDate = new Date(selectedClass.end_date);
+
+  classStartDate.setHours(0, 0, 0, 0);
+  classEndDate.setHours(23, 59, 59, 999);
+
+  if (currentDate < classStartDate || currentDate > classEndDate) {
+    toast.error(
+      `Cannot take attendance!\n\n` +
+      `This class runs from ${classStartDate.toLocaleDateString()} ` +
+      `to ${classEndDate.toLocaleDateString()}\n\n` +
+      `Today's date (${currentDate.toLocaleDateString()}) is outside this period.`
+    );
+    return;
+  }
+  // ============================================================
 
   setIsRecording(true)
 
@@ -181,7 +207,6 @@ const startLiveStream = () => {
     try {
       const data = JSON.parse(event.data)
 
-      // Backend signals it is ready → start sending frames
       if (data.status === "ready") {
         console.log("🟢 Backend ready – starting frame capture")
         frameIntervalRef.current = setInterval(() => {
@@ -192,7 +217,7 @@ const startLiveStream = () => {
           if (!screenshot) return
 
           wsNow.send(JSON.stringify({ image: screenshot }))
-        }, 1000) // send one frame per second
+        }, 8000)
         return
       }
 
@@ -200,37 +225,22 @@ const startLiveStream = () => {
 
       if (data.results && Array.isArray(data.results)) {
         setRecords(prev => {
-          // Track recognized student IDs in the current frame
-          const recognizedIds = new Set<string>()
-          const resultByStudentId = new Map<string, any>()
-
+          const newRecords = [...prev]
           data.results.forEach((res: any) => {
             if (res.recognized && res.student_id) {
-              recognizedIds.add(res.student_id)
-              resultByStudentId.set(res.student_id, res)
-            }
-          })
-
-          return prev.map(record => {
-            if (recognizedIds.has(record.student_id)) {
-              const res = resultByStudentId.get(record.student_id)
-              return {
-                ...record,
-                status: "present",
-                emotion: res.emotion || "neutral",
-                pose: res.pose || "standing",
-                timestamp: new Date().toISOString()
-              }
-            } else {
-              return {
-                ...record,
-                status: "absent",
-                emotion: undefined,
-                pose: undefined,
-                timestamp: record.timestamp // keep the previous timestamp or reset to now
+              const index = newRecords.findIndex(r => r.student_id === res.student_id)
+              if (index !== -1) {
+                newRecords[index] = {
+                  ...newRecords[index],
+                  status: "present",
+                  emotion: res.emotion || "neutral",
+                  pose: res.pose || "standing",
+                  timestamp: new Date().toISOString()
+                }
               }
             }
           })
+          return newRecords
         })
       }
     } catch (e) {
@@ -410,7 +420,13 @@ const stopLiveStream = () => {
                   audio={false}
                   ref={webcamRef as React.RefObject<WebcamCaptureRef>}
                   screenshotFormat="image/jpeg"
-                  videoConstraints={{ facingMode: "user" }}
+                  videoConstraints={{
+                    width: 640,
+                    height: 480,
+                    facingMode: "user"
+                  }}
+                  screenshotWidth={640}
+                  screenshotHeight={480}
                   className="w-full h-full object-cover"
                 />
                 {!isRecording && (
@@ -453,16 +469,71 @@ const stopLiveStream = () => {
                 <ListChecks size={16} className="text-blue-400" />
                 <span className="text-sm font-bold text-white">Real-time Detection</span>
               </div>
-              {records.length > 0 && (
-                <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
-                  {records.filter(r => 
-                    r.status === "present" &&
-                    r.full_name && 
-                    r.full_name.toLowerCase() !== "unknown" && 
-                    !r.full_name.toLowerCase().includes("not registered")
-                  ).length} IDENTIFIED
-                </span>
-              )}
+
+              <div className="flex items-center gap-3">
+                {records.length > 0 && (
+                  <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-tighter">
+                    {records.filter(r => 
+                      r.status === "present" &&
+                      r.full_name && 
+                      r.full_name.toLowerCase() !== "unknown" && 
+                      !r.full_name.toLowerCase().includes("not registered")
+                    ).length} IDENTIFIED
+                  </span>
+                )}
+
+                {/* Refresh Button */}
+                <Button
+                  onClick={() => {
+                    // Trigger a manual snapshot
+                    const screenshot = webcamRef.current?.getScreenshot();
+                    if (screenshot) {
+                      const formData = new FormData();
+                      formData.append("file", 
+                        new Blob([atob(screenshot.split(',')[1])], { type: 'image/jpeg' }), 
+                        "refresh.jpg"
+                      );
+
+                      fetch("http://127.0.0.1:8000/attendance/recognize", {
+                        method: "POST",
+                        headers: {
+                          "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                        },
+                        body: formData
+                      })
+                      .then(res => res.json())
+                      .then(result => {
+                        if (result.status === "success" && result.results) {
+                          setRecords(prev => {
+                            const newRecords = [...prev];
+                            result.results.forEach((res: any) => {
+                              if (res.recognized && res.student_id) {
+                                const idx = newRecords.findIndex(r => r.student_id === res.student_id);
+                                if (idx !== -1) {
+                                  newRecords[idx] = {
+                                    ...newRecords[idx],
+                                    status: "present",
+                                    emotion: res.emotion || "neutral",
+                                    pose: res.pose || "standing",
+                                    timestamp: new Date().toISOString()
+                                  };
+                                }
+                              }
+                            });
+                            return newRecords;
+                          });
+                        }
+                      })
+                      .catch(err => console.error("Refresh failed:", err));
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-white/20 hover:bg-white/10"
+                >
+                  ↻ Refresh
+                </Button>
+              </div>
             </div>
             <div className="flex-1 flex flex-col">
               <div className="flex-1 overflow-hidden">

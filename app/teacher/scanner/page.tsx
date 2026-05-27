@@ -184,14 +184,14 @@ const startLiveStream = () => {
       if (data.status === "ready") {
         console.log("🟢 Backend ready – starting frame capture")
         frameIntervalRef.current = setInterval(() => {
-          const wsNow = wsRef.current
-          if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return
+            const wsNow = wsRef.current
+            if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return
 
-          const screenshot = webcamRef.current?.getScreenshot()
-          if (!screenshot) return
+            const screenshot = webcamRef.current?.getScreenshot()
+            if (!screenshot) return
 
-          wsNow.send(JSON.stringify({ image: screenshot }))
-        }, 1000) // send one frame per second
+            wsNow.send(JSON.stringify({ image: screenshot }))
+              }, 8000)   
         return
       }
 

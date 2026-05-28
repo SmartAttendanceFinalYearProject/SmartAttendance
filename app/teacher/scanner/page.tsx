@@ -192,7 +192,7 @@ const startLiveStream = () => {
           if (!screenshot) return
 
           wsNow.send(JSON.stringify({ image: screenshot }))
-        }, 1000) // send one frame per second
+        }, 8000) 
         return
       }
 

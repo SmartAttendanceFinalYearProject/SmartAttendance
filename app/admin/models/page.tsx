@@ -183,6 +183,35 @@ const [isSubmittingStudent, setIsSubmittingStudent] = useState(false);
   }
 }
 
+// ====================== STUDENT EDIT HELPERS ======================
+const openStudentEdit = (student: Student) => {
+  setEditingStudentId(student.studentID)
+  setStudentForm({
+    fullName: student.fullName || "",
+    department: student.department || "",
+    section: student.section || "",
+    email: student.email || "",
+    batch: student.batch || "",
+    class_year: student.class_year || "",
+    semester: student.semester || "",
+  })
+  setShowStudentForm(true)
+}
+
+const closeStudentForm = () => {
+  setShowStudentForm(false)
+  setEditingStudentId(null)
+  setStudentForm({
+    fullName: "",
+    department: "",
+    section: "",
+    email: "",
+    batch: "",
+    class_year: "",
+    semester: "",
+  })
+}
+
 const removeStudent = async (studentID: string) => {
   if (!confirm("Are you sure you want to delete this student?")) return
   try {
@@ -919,10 +948,8 @@ const removeStudent = async (studentID: string) => {
 
     {students.length === 0 ? (
       <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10">
-        <div className="w-16 h-16 rounded-full bg-blue-500/5 flex items-center justify-center mb-4">
-          <Users size={32} className="text-slate-600" />
-        </div>
-        <p className="text-white font-bold mb-1">No Students Found</p>
+        <Users size={48} className="text-slate-500 mb-4" />
+        <p className="text-white font-bold">No Students Found</p>
       </div>
     ) : (
       students
@@ -939,52 +966,25 @@ const removeStudent = async (studentID: string) => {
                   {student.fullName}
                 </p>
                 <p className="text-xs text-slate-400 font-mono">{student.studentID}</p>
-                <div className="flex gap-2 mt-1 flex-wrap">
-                  {student.department && <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">{student.department}</span>}
-                  {student.batch && <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded">B{student.batch}</span>}
-                  {student.class_year && <span className="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded">Yr {student.class_year}</span>}
-                  {student.semester && <span className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">Sem {student.semester}</span>}
-                </div>
               </div>
 
               <div className="flex gap-2">
-                {/* View Button */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="border-white/5 hover:bg-white/10"
-                  onClick={() => setViewingItem({ type: "students", data: student })}
-                >
+                <Button variant="outline" size="sm" onClick={() => setViewingItem({ type: "students", data: student })}>
                   <Eye size={14} />
                 </Button>
-
-                {/* Edit Button */}
+                
+                {/* FIXED EDIT BUTTON */}
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="border-white/5 hover:bg-white/10"
-                  onClick={() => {
-                    setEditingStudentId(student.studentID)
-                    setStudentForm({
-                      fullName: student.fullName || "",
-                      department: student.department || "",
-                      section: student.section || "",
-                      email: student.email || "",
-                      batch: student.batch || "",
-                      class_year: student.class_year || "",
-                      semester: student.semester || "",
-                    })
-                    setShowStudentForm(true)
-                  }}
+                  onClick={() => openStudentEdit(student)}
                 >
                   <Pencil size={14} />
                 </Button>
 
-                {/* Delete Button */}
                 <Button 
                   variant="destructive" 
                   size="sm" 
-                  className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white"
                   onClick={() => removeStudent(student.studentID)}
                 >
                   <Trash2 size={14} />
@@ -1171,6 +1171,76 @@ const removeStudent = async (studentID: string) => {
         </DialogContent>
       </Dialog>
      
+      {/* Student Edit Dialog */}
+      <Dialog open={showStudentForm} onOpenChange={closeStudentForm}>
+        <DialogContent className="bg-[#0b1426] border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Student Information</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={submitStudent} className="space-y-4">
+            <div className="space-y-1">
+              <Label>Full Name</Label>
+              <Input
+                value={studentForm.fullName}
+                onChange={(e) => setStudentForm(p => ({ ...p, fullName: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Department</Label>
+                <Input
+                  value={studentForm.department}
+                  onChange={(e) => setStudentForm(p => ({ ...p, department: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Section</Label>
+                <Input
+                  value={studentForm.section}
+                  onChange={(e) => setStudentForm(p => ({ ...p, section: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={studentForm.email}
+                onChange={(e) => setStudentForm(p => ({ ...p, email: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Batch</Label>
+                <Input value={studentForm.batch} onChange={(e) => setStudentForm(p => ({ ...p, batch: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Year</Label>
+                <Input value={studentForm.class_year} onChange={(e) => setStudentForm(p => ({ ...p, class_year: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Semester</Label>
+                <Input value={studentForm.semester} onChange={(e) => setStudentForm(p => ({ ...p, semester: e.target.value }))} />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button type="button" variant="outline" className="flex-1" onClick={closeStudentForm}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1" disabled={isSubmittingStudent}>
+                {isSubmittingStudent ? "Updating..." : "Update Student"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff, Users } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,11 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { BookOpen, GraduationCap, Layers3, Trash2, Pencil, Plus, X, Eye, EyeOff } from "lucide-react"
 
+type Tab = "subjects" | "teachers" | "classes" | "students"
 type Subject = { id: string; subject_name: string; subject_code: string }
 type Teacher = { id: string; full_name: string; subject_id: string; username: string }
-type Student = { id: string; fullName: string; studentID: string; batch?: string; class_year?: string; semester?: string; section?: string; department?: string }
+type Student = { id: string; fullName: string; studentID:  string; batch?: string; class_year?: string; semester?: string; section?: string; email?: string; department?: string }
 type DaySchedule = { day: string; start_time: string; end_time: string }
 type ClassItem = {
   id: string
@@ -26,7 +27,25 @@ type ClassItem = {
   student_count: number
   students: string[]
 }
-
+type StudentPerformance = {
+  student_id: string
+  full_name: string
+  studentID: string
+  department?: string
+  batch?: string
+  class_year?: string
+  semester?: string
+  overall_attendance: number
+  total_sessions: number
+  classes: Array<{
+    class_id: string
+    class_name: string
+    subject_name: string
+    attendance_rate: number
+    total_sessions: number
+    present_count: number
+  }>
+}
 const API = "http://localhost:8000"
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -42,13 +61,13 @@ const emptyClassForm = {
   students: [] as string[],
 }
 
-type Tab = "subjects" | "teachers" | "classes"
+
 
 type ViewItem =
   | { type: "subjects"; data: Subject }
   | { type: "teachers"; data: Teacher }
   | { type: "classes"; data: ClassItem }
-
+  | { type: "students"; data: Student }   
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong"
 }
@@ -77,10 +96,27 @@ export default function AdminModelsPage() {
   const [isSubmittingTeacher, setIsSubmittingTeacher] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
+const [studentForm, setStudentForm] = useState({
+  fullName: "",
+  department: "",
+  section: "",
+  email: "",
+  batch: "",
+  class_year: "",
+  semester: "",
+});
+
+const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+const [showStudentForm, setShowStudentForm] = useState(false);
+const [isSubmittingStudent, setIsSubmittingStudent] = useState(false);
+
   const [classForm, setClassForm] = useState(emptyClassForm)
   const [editingClassId, setEditingClassId] = useState<string | null>(null)
   const [isSubmittingClass, setIsSubmittingClass] = useState(false)
   const [viewingItem, setViewingItem] = useState<ViewItem | null>(null)
+
+  const [studentPerformance, setStudentPerformance] = useState<StudentPerformance[]>([])
+  const [selectedStudent, setSelectedStudent] = useState<any>(null)
 
   const authHeader = useMemo((): Record<string, string> => {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
@@ -89,11 +125,12 @@ export default function AdminModelsPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [subjectRes, teacherRes, classRes, studentRes] = await Promise.all([
+      const [subjectRes, teacherRes, classRes, studentRes,studentPerfRes] = await Promise.all([
         fetch(`${API}/subjects`, { headers: authHeader }),
         fetch(`${API}/admin/teachers`, { headers: authHeader }),
         fetch(`${API}/classes`, { headers: authHeader }),
         fetch(`${API}/admin/students`, { headers: authHeader }),
+        fetch(`${API}/admin/students/performance`, { headers: authHeader }),
       ])
 
       // Each resource is independent — one failure won't block the others
@@ -108,7 +145,10 @@ export default function AdminModelsPage() {
 
       if (classRes.ok) setClasses(await classRes.json())
       else toast.error("Could not load classes — check backend logs")
-
+      
+      if (studentPerfRes.ok) {
+      setStudentPerformance(await studentPerfRes.json())
+      }
     } catch (error: unknown) {
       toast.error(errorMessage(error) || "Network error — could not reach backend")
     } finally {
@@ -119,6 +159,44 @@ export default function AdminModelsPage() {
   useEffect(() => {
     void fetchAll()
   }, [fetchAll])
+  const submitStudent = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsSubmittingStudent(true)
+  try {
+    const endpoint = `${API}/admin/students/${editingStudentId}`
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeader },
+      body: JSON.stringify(studentForm),
+    })
+
+    if (!res.ok) throw new Error((await res.json()).detail || "Failed to update")
+
+    toast.success(editingStudentId ? "Student updated successfully" : "Student registered")
+    setShowStudentForm(false)
+    setEditingStudentId(null)
+    await fetchAll()
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    setIsSubmittingStudent(false)
+  }
+}
+
+const removeStudent = async (studentID: string) => {
+  if (!confirm("Are you sure you want to delete this student?")) return
+  try {
+    const res = await fetch(`${API}/admin/students/${studentID}`, {
+      method: "DELETE",
+      headers: authHeader
+    })
+    if (!res.ok) throw new Error("Delete failed")
+    toast.success("Student deleted successfully")
+    await fetchAll()
+  } catch {
+    toast.error("Failed to delete student")
+  }
+}
 
   const submitSubject = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -288,11 +366,12 @@ export default function AdminModelsPage() {
     )
   }
 
-  const tabs: { value: Tab; label: string; icon: React.ReactNode }[] = [
-    { value: "subjects", label: "Subjects", icon: <BookOpen size={15} /> },
-    { value: "teachers", label: "Teachers", icon: <GraduationCap size={15} /> },
-    { value: "classes", label: "Classes", icon: <Layers3 size={15} /> },
-  ]
+ const tabs: { value: Tab; label: string; icon: React.ReactNode }[] = [
+  { value: "subjects", label: "Subjects", icon: <BookOpen size={15} /> },
+  { value: "teachers", label: "Teachers", icon: <GraduationCap size={15} /> },
+  { value: "classes", label: "Classes", icon: <Layers3 size={15} /> },
+  { value: "students", label: "Students", icon: <Users size={15} /> }, // Import Users from lucide-react
+]
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
@@ -825,7 +904,98 @@ export default function AdminModelsPage() {
           )}
         </div>
       )}
+{/* ══════════════ STUDENTS TAB ══════════════ */}
+{activeTab === "students" && (
+  <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-xl font-semibold">All Students</h2>
+      <Input 
+        placeholder="Search students..." 
+        className="max-w-xs"
+        value={studentSearch}
+        onChange={(e) => setStudentSearch(e.target.value)}
+      />
+    </div>
 
+    {students.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10">
+        <div className="w-16 h-16 rounded-full bg-blue-500/5 flex items-center justify-center mb-4">
+          <Users size={32} className="text-slate-600" />
+        </div>
+        <p className="text-white font-bold mb-1">No Students Found</p>
+      </div>
+    ) : (
+      students
+        .filter(s => 
+          !studentSearch || 
+          s.fullName?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+          s.studentID?.toLowerCase().includes(studentSearch.toLowerCase())
+        )
+        .map((student) => (
+          <Card key={student.id} className="bg-card/30 border-white/5 transition-all hover:border-white/10 hover:bg-card/40 group">
+            <CardContent className="py-4 flex items-center justify-between">
+              <div>
+                <p className="text-white font-semibold group-hover:text-blue-400 transition-colors">
+                  {student.fullName}
+                </p>
+                <p className="text-xs text-slate-400 font-mono">{student.studentID}</p>
+                <div className="flex gap-2 mt-1 flex-wrap">
+                  {student.department && <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">{student.department}</span>}
+                  {student.batch && <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded">B{student.batch}</span>}
+                  {student.class_year && <span className="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded">Yr {student.class_year}</span>}
+                  {student.semester && <span className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">Sem {student.semester}</span>}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {/* View Button */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-white/5 hover:bg-white/10"
+                  onClick={() => setViewingItem({ type: "students", data: student })}
+                >
+                  <Eye size={14} />
+                </Button>
+
+                {/* Edit Button */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-white/5 hover:bg-white/10"
+                  onClick={() => {
+                    setEditingStudentId(student.studentID)
+                    setStudentForm({
+                      fullName: student.fullName || "",
+                      department: student.department || "",
+                      section: student.section || "",
+                      email: student.email || "",
+                      batch: student.batch || "",
+                      class_year: student.class_year || "",
+                      semester: student.semester || "",
+                    })
+                    setShowStudentForm(true)
+                  }}
+                >
+                  <Pencil size={14} />
+                </Button>
+
+                {/* Delete Button */}
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white"
+                  onClick={() => removeStudent(student.studentID)}
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+    )}
+  </div>
+)}
       {/* ── View Detail Modal ── */}
       <Dialog open={!!viewingItem} onOpenChange={() => setViewingItem(null)}>
         <DialogContent className="bg-[#0b1426] border-white/10 text-white max-w-2xl overflow-hidden">
@@ -864,7 +1034,40 @@ export default function AdminModelsPage() {
                   )}
                 </div>
               </div>
-            )}
+            )}{viewingItem?.type === "students" && (
+  <div className="grid gap-4">
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Full Name</span>
+      <span className="col-span-2 font-medium">{viewingItem.data.fullName}</span>
+    </div>
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Student ID</span>
+      <span className="col-span-2 font-mono text-blue-400">{viewingItem.data.studentID}</span>
+    </div>
+    {viewingItem.data.email && (
+      <div className="grid grid-cols-3 gap-1">
+        <span className="text-slate-400 text-sm">Email</span>
+        <span className="col-span-2">{viewingItem.data.email}</span>
+      </div>
+    )}
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Department</span>
+      <span className="col-span-2">{viewingItem.data.department || "N/A"}</span>
+    </div>
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Section</span>
+      <span className="col-span-2">{viewingItem.data.section || "N/A"}</span>
+    </div>
+    <div className="grid grid-cols-3 gap-1">
+      <span className="text-slate-400 text-sm">Batch / Year / Semester</span>
+      <span className="col-span-2">
+        {viewingItem.data.batch ? `Batch ${viewingItem.data.batch}` : ""} 
+        {viewingItem.data.class_year ? ` • Year ${viewingItem.data.class_year}` : ""} 
+        {viewingItem.data.semester ? ` • Sem ${viewingItem.data.semester}` : ""}
+      </span>
+    </div>
+  </div>
+)}
 
             {viewingItem?.type === "teachers" && (
               <div className="grid gap-4">
@@ -967,6 +1170,7 @@ export default function AdminModelsPage() {
           </div>
         </DialogContent>
       </Dialog>
+     
     </div>
   )
 }
